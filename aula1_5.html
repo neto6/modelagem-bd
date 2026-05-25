@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aula 1.5 / DDL e CREATE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0e1a;
+      --surface: #141a2e;
+      --surface-2: #1c2440;
+      --border: #2a3656;
+      --text: #e2e8f0;
+      --text-dim: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #a78bfa;
+      --accent-2: #06b6d4;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at top right, rgba(167, 139, 250, 0.08), transparent 50%),
+        radial-gradient(ellipse at bottom left, rgba(6, 182, 212, 0.06), transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .deck { position: relative; width: 100vw; height: 100vh; z-index: 1; }
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 4.5rem 5.5rem 5rem;
+      display: none;
+      flex-direction: column;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .slide.active { display: flex; opacity: 1; }
+    .slide-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    .slide-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+      line-height: 1.1;
+    }
+    .slide-subtitle {
+      font-size: 1.125rem;
+      color: var(--text-dim);
+      margin-bottom: 2rem;
+      max-width: 1000px;
+    }
+    .slide-content {
+      flex: 1;
+      font-size: 1.125rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      min-height: 0;
+    }
+    .slide.cover {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 4rem;
+    }
+    .cover-tag {
+      display: inline-block;
+      padding: 0.5rem 1.25rem;
+      background: rgba(167, 139, 250, 0.1);
+      border: 1px solid rgba(167, 139, 250, 0.3);
+      border-radius: 999px;
+      color: var(--accent);
+      font-size: 0.875rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+    }
+    .cover h1 {
+      font-size: 4.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #e2e8f0 0%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.05;
+    }
+    .cover .lead {
+      font-size: 1.5rem;
+      color: var(--text-dim);
+      max-width: 700px;
+    }
+    .cover-meta {
+      margin-top: 3rem;
+      display: flex;
+      gap: 3rem;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .cover-meta span strong {
+      color: var(--text);
+      display: block;
+      font-size: 1rem;
+      margin-top: 0.5rem;
+      letter-spacing: 0;
+      text-transform: none;
+      font-weight: 600;
+    }
+    .bullet-list { list-style: none; }
+    .bullet-list li {
+      position: relative;
+      padding: 0.5rem 0 0.5rem 1.75rem;
+      font-size: 1.125rem;
+    }
+    .bullet-list li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: bold;
+    }
+    .bullet-list strong { color: var(--text); font-weight: 600; }
+    .grid { display: grid; gap: 1.25rem; }
+    .grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+    .card h3 {
+      color: var(--accent);
+      font-size: 1.125rem;
+      margin-bottom: 0.625rem;
+    }
+    .card p {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+    .card p + p { margin-top: 0.5rem; }
+    .card-accent-2 h3 { color: var(--accent-2); }
+    .card-success h3 { color: var(--success); }
+    .card-warning h3 { color: var(--warning); }
+    .card-danger h3 { color: var(--danger); }
+    .card code {
+      background: rgba(167, 139, 250, 0.1);
+      color: var(--accent);
+      padding: 0.125rem 0.375rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+    code { font-family: 'JetBrains Mono', monospace; }
+    .kw { color: var(--accent); font-weight: 600; }
+    .ty { color: var(--accent-2); }
+    .st { color: var(--success); }
+    .nu { color: var(--warning); }
+    .cm { color: var(--text-muted); font-style: italic; }
+    .fn { color: #f472b6; }
+    .callout {
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      border-left: 3px solid var(--accent);
+      background: rgba(167, 139, 250, 0.06);
+      font-size: 1rem;
+    }
+    .callout-warning { border-color: var(--warning); background: rgba(245, 158, 11, 0.06); }
+    .callout-success { border-color: var(--success); background: rgba(16, 185, 129, 0.06); }
+    .callout-danger { border-color: var(--danger); background: rgba(239, 68, 68, 0.06); }
+    .callout-strong {
+      font-weight: 700;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 0.25rem;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .callout-warning .callout-strong { color: var(--warning); }
+    .callout-success .callout-strong { color: var(--success); }
+    .callout-danger .callout-strong { color: var(--danger); }
+    .badge-section { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .badge {
+      display: inline-block;
+      padding: 0.3rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .badge-challenge { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+    .badge-individual { background: rgba(6, 182, 212, 0.15); color: var(--accent-2); }
+    .badge-group { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .badge-next { background: rgba(167, 139, 250, 0.15); color: var(--accent); }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .two-col h3 {
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 0.875rem;
+      font-weight: 700;
+    }
+    .numbered {
+      list-style: none;
+      counter-reset: step;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .numbered li {
+      counter-increment: step;
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-start;
+    }
+    .numbered li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 50%;
+      background: rgba(167, 139, 250, 0.08);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+    }
+    .numbered li strong {
+      display: block;
+      font-size: 1.125rem;
+      color: var(--text);
+      margin-bottom: 0.125rem;
+    }
+    .numbered li span {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+    }
+    .type-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+    .type-table th {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    .type-table td {
+      padding: 0.625rem 1rem;
+      border-bottom: 1px solid rgba(42, 54, 86, 0.5);
+      vertical-align: top;
+    }
+    .type-table code {
+      color: var(--accent-2);
+      background: rgba(6, 182, 212, 0.08);
+      padding: 0.125rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+    .type-table tr:last-child td { border-bottom: none; }
+    .progress-bar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.3s ease;
+      z-index: 10;
+      width: 0;
+    }
+    .footer {
+      position: fixed;
+      bottom: 1.25rem;
+      left: 0; right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2.5rem;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      z-index: 10;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .footer-brand .accent { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progress"></div>
+  <div class="deck" id="deck">
+
+    <section class="slide cover active">
+      <div class="cover-tag">Aula 1.5</div>
+      <h1>DDL e CREATE</h1>
+      <p class="lead">Tirando o DER do papel. Hora de o SQL Server entrar em ação.</p>
+      <div class="cover-meta">
+        <span>Curso<strong>Modelagem SQL Server</strong></span>
+        <span>Duração<strong>1h30</strong></span>
+        <span>Tema<strong>Universo RPG</strong></span>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Recap</div>
+      <h2 class="slide-title">De onde viemos, pra onde vamos</h2>
+      <p class="slide-subtitle">Na Aula 1 desenhamos. Agora a gente escreve SQL de verdade.</p>
+      <div class="slide-content">
+        <div class="grid cols-2">
+          <div class="card">
+            <h3>Aula 1 (feito)</h3>
+            <p>DER do RPG no papel. Entidades, atributos, relacionamentos e cardinalidades definidas.</p>
+          </div>
+          <div class="card card-accent-2">
+            <h3>Aula 1.5 (agora)</h3>
+            <p>Traduzir o DER em CREATE DATABASE e CREATE TABLE. Banco rodando no SSMS no fim da aula.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Aula 1.5</div>
+      <h2 class="slide-title">O que você vai sair sabendo</h2>
+      <div class="slide-content">
+        <ul class="bullet-list">
+          <li>Diferença entre <strong>DDL, DML e DCL</strong></li>
+          <li>Criar um banco com <strong>CREATE DATABASE</strong></li>
+          <li>Criar tabelas com <strong>CREATE TABLE</strong></li>
+          <li>Escolher o <strong>tipo de dado</strong> certo pra cada coluna</li>
+          <li>Usar <strong>NULL/NOT NULL</strong> e <strong>IDENTITY</strong></li>
+          <li>Modificar e remover estruturas com <strong>ALTER</strong> e <strong>DROP</strong></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Fundamentos</div>
+      <h2 class="slide-title">A família SQL</h2>
+      <p class="slide-subtitle">SQL não é uma coisa só. Tem três famílias principais.</p>
+      <div class="slide-content">
+        <div class="grid cols-3">
+          <div class="card">
+            <h3>DDL</h3>
+            <p><strong style="color: var(--text);">Data Definition Language</strong></p>
+            <p>Define estrutura. CREATE, ALTER, DROP, TRUNCATE.</p>
+            <p style="color: var(--accent); margin-top: 0.75rem; font-size: 0.85rem;">Foco de hoje</p>
+          </div>
+          <div class="card card-accent-2">
+            <h3>DML</h3>
+            <p><strong style="color: var(--text);">Data Manipulation Language</strong></p>
+            <p>Mexe nos dados. INSERT, UPDATE, DELETE, SELECT.</p>
+            <p style="color: var(--text-muted); margin-top: 0.75rem; font-size: 0.85rem;">Aula 2</p>
+          </div>
+          <div class="card card-success">
+            <h3>DCL</h3>
+            <p><strong style="color: var(--text);">Data Control Language</strong></p>
+            <p>Controla acesso. GRANT, REVOKE, DENY.</p>
+            <p style="color: var(--text-muted); margin-top: 0.75rem; font-size: 0.85rem;">Fora do escopo</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Primeiro comando</div>
+      <h2 class="slide-title">CREATE DATABASE</h2>
+      <p class="slide-subtitle">O ponto de partida. Sem banco, não tem tabela.</p>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Forma mais simples</span>
+<span class="kw">CREATE DATABASE</span> rpg_game;
+
+<span class="cm">-- A partir daqui, todos os comandos rodam nesse banco</span>
+<span class="kw">USE</span> rpg_game;
+
+<span class="cm">-- Pra apagar (cuidado)</span>
+<span class="kw">DROP DATABASE</span> rpg_game;</code></pre>
+        <div class="callout">
+          <span class="callout-strong">Por baixo dos panos</span>
+          O SQL Server cria dois arquivos: <code>.mdf</code> (dados) e <code>.ldf</code> (log de transações). Por enquanto não se preocupe com isso.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Anatomia</div>
+      <h2 class="slide-title">CREATE TABLE</h2>
+      <p class="slide-subtitle">A estrutura básica que vamos repetir várias vezes hoje.</p>
+      <div class="slide-content">
+<pre><code><span class="kw">CREATE TABLE</span> contas (
+  id            <span class="ty">INT</span>            <span class="kw">IDENTITY</span>(1,1) <span class="kw">NOT NULL</span>,
+  login         <span class="ty">NVARCHAR</span>(50)   <span class="kw">NOT NULL</span>,
+  email         <span class="ty">NVARCHAR</span>(120)  <span class="kw">NOT NULL</span>,
+  senha_hash    <span class="ty">NVARCHAR</span>(255)  <span class="kw">NOT NULL</span>,
+  data_criacao  <span class="ty">DATETIME</span>       <span class="kw">NOT NULL</span>
+);</code></pre>
+        <div class="grid cols-3">
+          <div class="card">
+            <h3>Coluna</h3>
+            <p>Nome curto, descritivo, snake_case. Evite abreviações criativas.</p>
+          </div>
+          <div class="card card-accent-2">
+            <h3>Tipo</h3>
+            <p>O contrato com o SGBD sobre o que aquela coluna vai guardar.</p>
+          </div>
+          <div class="card card-success">
+            <h3>Modificadores</h3>
+            <p>NULL/NOT NULL, IDENTITY, DEFAULT, e (em breve) constraints.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Tipos de dados</div>
+      <h2 class="slide-title">O que o SQL Server entende</h2>
+      <p class="slide-subtitle">Não precisa decorar todos. Os mais usados resolvem 95% dos casos.</p>
+      <div class="slide-content">
+        <table class="type-table">
+          <thead>
+            <tr><th>Categoria</th><th>Tipo</th><th>Uso</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Numérico inteiro</td><td><code>INT</code> / <code>BIGINT</code> / <code>SMALLINT</code></td><td>IDs, contadores, níveis</td></tr>
+            <tr><td>Numérico decimal</td><td><code>DECIMAL(p,s)</code> / <code>MONEY</code></td><td>Preços, valores monetários</td></tr>
+            <tr><td>Numérico flutuante</td><td><code>FLOAT</code> / <code>REAL</code></td><td>Cálculos científicos (evite pra dinheiro)</td></tr>
+            <tr><td>Texto curto</td><td><code>VARCHAR(N)</code> / <code>NVARCHAR(N)</code></td><td>Nomes, emails, descrições</td></tr>
+            <tr><td>Texto longo</td><td><code>VARCHAR(MAX)</code> / <code>NVARCHAR(MAX)</code></td><td>Posts, comentários, JSON</td></tr>
+            <tr><td>Data e hora</td><td><code>DATE</code> / <code>DATETIME</code> / <code>TIME</code></td><td>Cadastros, eventos, agendamentos</td></tr>
+            <tr><td>Booleano</td><td><code>BIT</code></td><td>Sim/não, ativo/inativo (0 ou 1)</td></tr>
+            <tr><td>Identificador único</td><td><code>UNIQUEIDENTIFIER</code></td><td>GUIDs quando IDENTITY não basta</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Decisões importantes</div>
+      <h2 class="slide-title">Escolhendo o tipo certo</h2>
+      <p class="slide-subtitle">Erro aqui é caro depois. Pense duas vezes antes de fechar o tipo.</p>
+      <div class="slide-content">
+        <div class="grid cols-2">
+          <div class="card">
+            <h3>VARCHAR vs NVARCHAR</h3>
+            <p><code>VARCHAR</code> = ASCII. <code>NVARCHAR</code> = Unicode (acentos, emoji, kanji).</p>
+            <p>Vamos usar NVARCHAR nos nossos exemplos por garantia.</p>
+          </div>
+          <div class="card card-accent-2">
+            <h3>NVARCHAR(N) vs NVARCHAR(MAX)</h3>
+            <p>Se você sabe que o texto tem limite (login até 50, email até 120), defina o tamanho.</p>
+            <p>MAX só pra conteúdo de tamanho realmente imprevisível.</p>
+          </div>
+          <div class="card card-success">
+            <h3>DATETIME e DATE</h3>
+            <p><code>DATETIME</code> pra data e hora juntos.</p>
+            <p>Se só importa o dia, use <code>DATE</code>.</p>
+          </div>
+          <div class="card card-warning">
+            <h3>DECIMAL pra dinheiro</h3>
+            <p>Nunca FLOAT pra valores monetários. Arredondamento binário causa centavos perdidos.</p>
+            <p>Use <code>DECIMAL(10,2)</code> ou similar.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Modificadores</div>
+      <h2 class="slide-title">NULL vs NOT NULL</h2>
+      <p class="slide-subtitle">Quando o valor é opcional, e quando ele é obrigatório.</p>
+      <div class="slide-content">
+        <div class="two-col">
+          <div>
+            <h3 style="color: var(--accent);">NULL = opcional</h3>
+            <ul class="bullet-list">
+              <li>Ausência de valor</li>
+              <li>Não é zero, não é string vazia</li>
+              <li>Qualquer comparação com NULL retorna desconhecido</li>
+              <li>Padrão se você não disser nada</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="color: var(--accent-2);">NOT NULL = obrigatório</h3>
+            <ul class="bullet-list">
+              <li>Tentar inserir sem valor dá erro</li>
+              <li>Use sempre que a coluna não faz sentido vazia</li>
+              <li>Login, email, data de criação devem ser NOT NULL</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout callout-warning">
+          <span class="callout-strong">Regra de ouro</span>
+          Default deveria ser NOT NULL. Só permita NULL quando faz sentido de negócio (ex: data_ultimo_login a princípio vai ser NULL).
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Modificadores</div>
+      <h2 class="slide-title">IDENTITY</h2>
+      <p class="slide-subtitle">Auto incremento. O jeito mais comum de gerar chaves primárias.</p>
+      <div class="slide-content">
+<pre><code><span class="cm">-- IDENTITY(seed, incremento)</span>
+id <span class="ty">INT</span> <span class="kw">IDENTITY</span>(1,1) <span class="kw">NOT NULL</span>
+
+<span class="cm">-- Você não insere o id, o SQL Server gera</span>
+<span class="kw">INSERT INTO</span> contas (login, email, senha_hash, data_criacao)
+<span class="kw">VALUES</span> (<span class="st">'arthas'</span>, <span class="st">'arthas@rpg.com'</span>, <span class="st">'...'</span>, <span class="fn">GETDATE</span>());
+
+<span class="cm">-- Pegar o id que acabou de ser gerado</span>
+<span class="kw">SELECT</span> <span class="fn">SCOPE_IDENTITY</span>();</code></pre>
+        <div class="callout">
+          <span class="callout-strong">Dica</span>
+          IDENTITY(1,1) começa em 1 e incrementa de 1. É o que você quer 99% das vezes.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Aplicando no RPG</div>
+      <h2 class="slide-title">Tabela Conta</h2>
+      <p class="slide-subtitle">Quem joga. Primeira tabela do nosso banco.</p>
+      <div class="slide-content">
+<pre><code><span class="kw">USE</span> rpg_game;
+
+<span class="kw">CREATE TABLE</span> contas (
+  id            <span class="ty">INT</span>            <span class="kw">IDENTITY</span>(1,1) <span class="kw">NOT NULL</span>,
+  login         <span class="ty">NVARCHAR</span>(50)   <span class="kw">NOT NULL</span>,
+  email         <span class="ty">NVARCHAR</span>(120)  <span class="kw">NOT NULL</span>,
+  senha_hash    <span class="ty">NVARCHAR</span>(255)  <span class="kw">NOT NULL</span>,
+  data_criacao  <span class="ty">DATETIME</span>       <span class="kw">NOT NULL</span>,
+  ativo         <span class="ty">BIT</span>            <span class="kw">NOT NULL</span>
+);</code></pre>
+        <div class="callout">
+          <span class="callout-strong">Observe</span>
+          Nenhuma PK ou UNIQUE ainda. Constraints vêm na Aula 3. Por enquanto: estrutura básica funcionando.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Aplicando no RPG</div>
+      <h2 class="slide-title">Tabela Personagem</h2>
+      <p class="slide-subtitle">Quem é jogado. Vai referenciar a conta dona.</p>
+      <div class="slide-content">
+<pre><code><span class="kw">CREATE TABLE</span> personagens (
+  id            <span class="ty">INT</span>            <span class="kw">IDENTITY</span>(1,1) <span class="kw">NOT NULL</span>,
+  conta_id      <span class="ty">INT</span>            <span class="kw">NOT NULL</span>,    <span class="cm">-- vai virar FK</span>
+  classe_id     <span class="ty">INT</span>            <span class="kw">NOT NULL</span>,
+  nome          <span class="ty">NVARCHAR</span>(60)   <span class="kw">NOT NULL</span>,
+  nivel         <span class="ty">SMALLINT</span>       <span class="kw">NOT NULL</span>,
+  vida_max      <span class="ty">INT</span>            <span class="kw">NOT NULL</span>,
+  mana_max      <span class="ty">INT</span>            <span class="kw">NOT NULL</span>,
+  experiencia   <span class="ty">BIGINT</span>         <span class="kw">NOT NULL</span>,
+  data_criacao  <span class="ty">DATETIME</span>       <span class="kw">NOT NULL</span>
+);</code></pre>
+        <div class="callout callout-success">
+          <span class="callout-strong">Por que NVARCHAR?</span>
+          Nome de personagem pode ter caracteres especiais, acentos, kanji ("ザ・ダーク"). NVARCHAR cobre tudo.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Aplicando no RPG</div>
+      <h2 class="slide-title">Tabelas Item e Magia</h2>
+      <p class="slide-subtitle">Catálogos. Itens e magias que existem no jogo.</p>
+      <div class="slide-content">
+<pre><code><span class="kw">CREATE TABLE</span> items (
+  id          <span class="ty">INT</span>            <span class="kw">IDENTITY</span>(1,1) <span class="kw">NOT NULL</span>,
+  nome        <span class="ty">NVARCHAR</span>(80)   <span class="kw">NOT NULL</span>,
+  tipo        <span class="ty">NVARCHAR</span>(30)   <span class="kw">NOT NULL</span>,
+  raridade    <span class="ty">NVARCHAR</span>(20)   <span class="kw">NOT NULL</span>,
+  valor       <span class="ty">DECIMAL</span>(10,2)  <span class="kw">NOT NULL</span>
+);
+
+<span class="kw">CREATE TABLE</span> magias (
+  id          <span class="ty">INT</span>            <span class="kw">IDENTITY</span>(1,1) <span class="kw">NOT NULL</span>,
+  nome        <span class="ty">NVARCHAR</span>(80)   <span class="kw">NOT NULL</span>,
+  custo_mana  <span class="ty">SMALLINT</span>       <span class="kw">NOT NULL</span>,
+  dano        <span class="ty">INT</span>            <span class="kw">NULL</span>,    <span class="cm">-- algumas magias não têm dano, como magias para correr mais</span>
+  tipo        <span class="ty">NVARCHAR</span>(30)   <span class="kw">NOT NULL</span>
+);</code></pre>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Quando precisar mudar</div>
+      <h2 class="slide-title">ALTER e DROP</h2>
+      <p class="slide-subtitle">Modelos evoluem. Saber alterar é tão importante quanto saber criar.</p>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Adicionar coluna</span>
+<span class="kw">ALTER TABLE</span> personagens
+<span class="kw">ADD</span> guilda_id <span class="ty">INT</span> <span class="kw">NULL</span>;
+
+<span class="cm">-- Remover coluna</span>
+<span class="kw">ALTER TABLE</span> personagens
+<span class="kw">DROP COLUMN</span> guilda_id;
+
+<span class="cm">-- Alterar tipo (cuidado, pode dar erro se tiver dado incompatível)</span>
+<span class="kw">ALTER TABLE</span> personagens
+<span class="kw">ALTER COLUMN</span> nome <span class="ty">NVARCHAR</span>(100) <span class="kw">NOT NULL</span>;
+
+<span class="cm">-- Remover tabela inteira (sem volta)</span>
+<span class="kw">DROP TABLE</span> personagens;</code></pre>
+        <div class="callout callout-danger">
+          <span class="callout-strong">Atenção</span>
+          DROP TABLE apaga estrutura e dados. Não tem CTRL+Z. Em produção, sempre script revisado e backup antes.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Boas práticas</div>
+      <h2 class="slide-title">Antes de seguir em frente</h2>
+      <div class="slide-content">
+        <ol class="numbered">
+          <li><strong>Nomenclatura consistente</strong><span>Escolha plural ou singular pra tabelas (contas vs conta) e mantenha. snake_case nas colunas.</span></li>
+          <li><strong>NOT NULL por padrão</strong><span>NULL é exceção, não regra. Pergunte sempre: faz sentido essa coluna ficar vazia?</span></li>
+          <li><strong>IDENTITY pra PK numérica</strong><span>Simples, eficiente, evita conflitos. Use até ter motivo forte pra outra coisa.</span></li>
+          <li><strong>Tipo do tamanho certo</strong><span>NVARCHAR(50) pra login, não NVARCHAR(MAX). SMALLINT pra nível, não BIGINT. Economiza espaço e processamento.</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Hora de praticar</div>
+      <div class="badge-section"><span class="badge badge-challenge">Desafio em aula</span></div>
+      <h2 class="slide-title">Crie a tabela Guildas</h2>
+      <p class="slide-subtitle">~20 minutos. Use o DER do desafio da Aula 1.</p>
+      <div class="slide-content">
+        <ul class="bullet-list">
+          <li>Crie a tabela <strong>guildas</strong> com pelo menos: id, nome, descricao, data_fundacao, lider_id</li>
+          <li>Defina os tipos certos pra cada coluna</li>
+          <li>Decida quais são NOT NULL e quais podem ser NULL (justifique)</li>
+          <li>Adicione a coluna <strong>guilda_id</strong> em personagens com <strong>ALTER TABLE</strong></li>
+          <li>Rode no SSMS</li>
+        </ul>
+        <div class="callout callout-warning">
+          <span class="callout-strong">Bonus</span>
+          O líder da guilda é um personagem. Como você representou isso? Vai dar problema mais tarde?
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Entrega do dia</div>
+      <div class="badge-section"><span class="badge badge-individual">Projeto Individual</span></div>
+      <h2 class="slide-title">Biblioteca: do DER ao SQL</h2>
+      <p class="slide-subtitle">Pegue o DER e transforme em CREATE TABLE.</p>
+      <div class="slide-content">
+        <div class="two-col">
+          <div>
+            <h3 style="color: var(--accent-2);">Fazer</h3>
+            <ul class="bullet-list">
+              <li>Script <code>biblioteca.sql</code> com CREATE DATABASE + todas as CREATE TABLE</li>
+              <li>Mínimo: autor, livro, usuario, emprestimo</li>
+              <li>Tipos escolhidos com critério</li>
+              <li>NOT NULL na maioria das colunas</li>
+              <li>IDENTITY nas PKs</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="color: var(--accent);">Verificar</h3>
+            <ul class="bullet-list">
+              <li>Script roda do zero sem erro</li>
+              <li>Tipos coerentes com o domínio</li>
+              <li>Nomenclatura consistente</li>
+              <li>Reflete o DER da tarefa anterior</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Entrega do dia</div>
+      <div class="badge-section"><span class="badge badge-group">Projeto em Grupo</span></div>
+      <h2 class="slide-title">DDL do projeto do grupo</h2>
+      <p class="slide-subtitle">Hora de validar o DER. Algumas coisas só aparecem quando você tenta escrever o CREATE TABLE.</p>
+      <div class="slide-content">
+        <div class="two-col">
+          <div>
+            <h3 style="color: var(--success);">Fazer</h3>
+            <ul class="bullet-list">
+              <li>Script SQL completo com todas as tabelas do domínio</li>
+              <li>DER atualizado (se houver ajustes)</li>
+              <li>Cada tabela com tipos bem pensados</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="color: var(--accent);">Discussão em grupo</h3>
+            <ul class="bullet-list">
+              <li>Quais entidades viraram tabelas diretas?</li>
+              <li>Algum relacionamento já forçou criar tabela nova?</li>
+              <li>Onde vocês ficaram em dúvida sobre o tipo?</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">A seguir</div>
+      <div class="badge-section"><span class="badge badge-next">Aula 2</span></div>
+      <h2 class="slide-title">DML: dar vida ao banco</h2>
+      <p class="slide-subtitle">Tabela vazia é só estrutura. Vamos colocar dado lá dentro.</p>
+      <div class="slide-content">
+        <ul class="bullet-list">
+          <li>INSERT: criar registros</li>
+          <li>SELECT + WHERE: filtrar registros</li>
+          <li>UPDATE: alterar registros</li>
+          <li>DELETE: remover registros</li>
+          <li>Cuidados com UPDATE/DELETE sem WHERE</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="slide cover">
+      <div class="cover-tag">Aula 1.5 / Fim</div>
+      <h1>Dúvidas?</h1>
+      <p class="lead">Banco criado. Tabelas vazias esperando dados.</p>
+    </section>
+
+  </div>
+  <div class="footer">
+    <div class="footer-brand">Modelagem SQL Server <span class="accent">/</span> Aula 1.5</div>
+    <div id="counter">1 / 20</div>
+  </div>
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    let i = 0;
+    const counter = document.getElementById('counter');
+    const progress = document.getElementById('progress');
+    function show(n) {
+      slides.forEach(s => s.classList.remove('active'));
+      slides[n].classList.add('active');
+      counter.textContent = `${n + 1} / ${slides.length}`;
+      progress.style.width = `${((n + 1) / slides.length) * 100}%`;
+    }
+    document.addEventListener('keydown', (e) => {
+      if (['ArrowRight', 'PageDown'].includes(e.key) || e.key === ' ') {
+        e.preventDefault();
+        i = Math.min(i + 1, slides.length - 1);
+        show(i);
+      } else if (['ArrowLeft', 'PageUp'].includes(e.key)) {
+        e.preventDefault();
+        i = Math.max(i - 1, 0);
+        show(i);
+      } else if (e.key === 'Home') { i = 0; show(i); }
+      else if (e.key === 'End') { i = slides.length - 1; show(i); }
+      else if (e.key === 'f' || e.key === 'F') {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('a, button, input, pre, code')) return;
+      i = Math.min(i + 1, slides.length - 1);
+      show(i);
+    });
+    show(0);
+  </script>
+</body>
+</html>

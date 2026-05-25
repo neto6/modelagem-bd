@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aula 1 / Modelo Conceitual e DER</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0e1a;
+      --surface: #141a2e;
+      --surface-2: #1c2440;
+      --border: #2a3656;
+      --text: #e2e8f0;
+      --text-dim: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #a78bfa;
+      --accent-2: #06b6d4;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at top right, rgba(167, 139, 250, 0.08), transparent 50%),
+        radial-gradient(ellipse at bottom left, rgba(6, 182, 212, 0.06), transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .deck { position: relative; width: 100vw; height: 100vh; z-index: 1; }
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 4.5rem 5.5rem 5rem;
+      display: none;
+      flex-direction: column;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .slide.active { display: flex; opacity: 1; }
+    .slide-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    .slide-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+      line-height: 1.1;
+    }
+    .slide-subtitle {
+      font-size: 1.125rem;
+      color: var(--text-dim);
+      margin-bottom: 2rem;
+      max-width: 1000px;
+    }
+    .slide-content {
+      flex: 1;
+      font-size: 1.125rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      min-height: 0;
+    }
+    .slide.cover {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 4rem;
+    }
+    .cover-tag {
+      display: inline-block;
+      padding: 0.5rem 1.25rem;
+      background: rgba(167, 139, 250, 0.1);
+      border: 1px solid rgba(167, 139, 250, 0.3);
+      border-radius: 999px;
+      color: var(--accent);
+      font-size: 0.875rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+    }
+    .cover h1 {
+      font-size: 4.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #e2e8f0 0%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.05;
+    }
+    .cover .lead {
+      font-size: 1.5rem;
+      color: var(--text-dim);
+      max-width: 700px;
+    }
+    .cover-meta {
+      margin-top: 3rem;
+      display: flex;
+      gap: 3rem;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .cover-meta span strong {
+      color: var(--text);
+      display: block;
+      font-size: 1rem;
+      margin-top: 0.5rem;
+      letter-spacing: 0;
+      text-transform: none;
+      font-weight: 600;
+    }
+    .bullet-list { list-style: none; }
+    .bullet-list li {
+      position: relative;
+      padding: 0.5rem 0 0.5rem 1.75rem;
+      font-size: 1.125rem;
+    }
+    .bullet-list li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: bold;
+    }
+    .bullet-list strong { color: var(--text); font-weight: 600; }
+    .grid { display: grid; gap: 1.25rem; }
+    .grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+    .card h3 {
+      color: var(--accent);
+      font-size: 1.125rem;
+      margin-bottom: 0.625rem;
+    }
+    .card p {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+    .card p + p { margin-top: 0.5rem; }
+    .card .icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+    .card-accent-2 h3 { color: var(--accent-2); }
+    .card-success h3 { color: var(--success); }
+    .card-warning h3 { color: var(--warning); }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+    code { font-family: 'JetBrains Mono', monospace; }
+    .kw { color: var(--accent); font-weight: 600; }
+    .ty { color: var(--accent-2); }
+    .st { color: var(--success); }
+    .nu { color: var(--warning); }
+    .cm { color: var(--text-muted); font-style: italic; }
+    .callout {
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      border-left: 3px solid var(--accent);
+      background: rgba(167, 139, 250, 0.06);
+      font-size: 1rem;
+    }
+    .callout-warning { border-color: var(--warning); background: rgba(245, 158, 11, 0.06); }
+    .callout-success { border-color: var(--success); background: rgba(16, 185, 129, 0.06); }
+    .callout-strong {
+      font-weight: 700;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 0.25rem;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .callout-warning .callout-strong { color: var(--warning); }
+    .callout-success .callout-strong { color: var(--success); }
+    .badge-section { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .badge {
+      display: inline-block;
+      padding: 0.3rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .badge-challenge { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+    .badge-individual { background: rgba(6, 182, 212, 0.15); color: var(--accent-2); }
+    .badge-group { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .badge-next { background: rgba(167, 139, 250, 0.15); color: var(--accent); }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .two-col h3 {
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 0.875rem;
+      font-weight: 700;
+    }
+    .numbered {
+      list-style: none;
+      counter-reset: step;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .numbered li {
+      counter-increment: step;
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-start;
+    }
+    .numbered li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 50%;
+      background: rgba(167, 139, 250, 0.08);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+    }
+    .numbered li strong {
+      display: block;
+      font-size: 1.125rem;
+      color: var(--text);
+      margin-bottom: 0.125rem;
+    }
+    .numbered li span {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+    }
+    .der-diagram {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+    .der-diagram svg { max-width: 100%; max-height: 100%; height: auto; }
+    .progress-bar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.3s ease;
+      z-index: 10;
+      width: 0;
+    }
+    .footer {
+      position: fixed;
+      bottom: 1.25rem;
+      left: 0; right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2.5rem;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      z-index: 10;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .footer-brand .accent { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progress"></div>
+  <div class="deck" id="deck">
+
+    <section class="slide cover active">
+      <div class="cover-tag">Aula 1</div>
+      <h1>Modelo Conceitual e DER</h1>
+      <p class="lead">Pensar antes de criar a primeira tabela.</p>
+      <div class="cover-meta">
+        <span>Curso<strong>Modelagem SQL Server</strong></span>
+        <span>Duração<strong>1h30</strong></span>
+        <span>Tema<strong>Universo RPG</strong></span>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Aula 1</div>
+      <h2 class="slide-title">O que você vai sair sabendo</h2>
+      <p class="slide-subtitle">Sem código ainda. Vamos planejar.</p>
+      <div class="slide-content">
+        <ul class="bullet-list">
+          <li>O que é modelo conceitual e por que ele importa</li>
+          <li>Identificar <strong>entidades, atributos e relacionamentos</strong> no domínio</li>
+          <li>Ler e desenhar um <strong>DER</strong></li>
+          <li>Decidir <strong>cardinalidade</strong> (1:1, 1:N, N:N)</li>
+          <li>Aplicar num simples jogo RPG</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Conceito</div>
+      <h2 class="slide-title">Por que modelar antes de criar?</h2>
+      <div class="slide-content">
+        <div class="grid cols-2">
+          <div class="card card-warning">
+            <span class="icon">⚡</span>
+            <h3>Sem modelar</h3>
+            <p>Primeira semana voa. Tabelas saem rápido.</p>
+            <p>Aos poucos: dados duplicados, relacionamento errado, refatoração dolorida.</p>
+          </div>
+          <div class="card card-success">
+            <span class="icon">🎯</span>
+            <h3>Modelando</h3>
+            <p>Primeiro dia parece perda de tempo.</p>
+            <p>Mas o banco nasce coerente. Mudanças futuras são localizadas, não cirurgias.</p>
+          </div>
+        </div>
+        <div class="callout">
+          <span class="callout-strong">Regra</span>
+          Modelar custa horas. Não modelar custa meses.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Fundamentos</div>
+      <h2 class="slide-title">Três níveis de modelagem</h2>
+      <p class="slide-subtitle">Mesma realidade, abstrações diferentes.</p>
+      <div class="slide-content">
+        <div class="grid cols-3">
+          <div class="card">
+            <h3>1. Conceitual</h3>
+            <p><strong style="color: var(--text);">O que existe.</strong></p>
+            <p>Independente de tecnologia. Linguagem do negócio.</p>
+            <p style="color: var(--text-muted); margin-top: 0.75rem; font-size: 0.85rem;">Foco da Aula 1</p>
+          </div>
+          <div class="card card-accent-2">
+            <h3>2. Lógico</h3>
+            <p><strong style="color: var(--text);">Como organizar.</strong></p>
+            <p>Tabelas, colunas, chaves. Sem se preocupar com performance ainda.</p>
+            <p style="color: var(--text-muted); margin-top: 0.75rem; font-size: 0.85rem;">Aula 1.5 em diante</p>
+          </div>
+          <div class="card card-success">
+            <h3>3. Físico</h3>
+            <p><strong style="color: var(--text);">Como o SGBD armazena.</strong></p>
+            <p>Tipos específicos do SQL Server, índices, partições.</p>
+            <p style="color: var(--text-muted); margin-top: 0.75rem; font-size: 0.85rem;">Aulas 3 e 5</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Conceito</div>
+      <h2 class="slide-title">Entidades</h2>
+      <p class="slide-subtitle">Coisas do mundo real que têm existência própria e merecem ser registradas.</p>
+      <div class="slide-content">
+        <div class="two-col">
+          <div>
+            <h3 style="color: var(--accent);">Como identificar</h3>
+            <ul class="bullet-list">
+              <li>Substantivos do domínio</li>
+              <li>Você consegue contar quantos existem</li>
+              <li>Tem atributos próprios</li>
+              <li>Faz sentido falar dela isoladamente</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="color: var(--accent-2);">No nosso joguinho RPG</h3>
+            <ul class="bullet-list">
+              <li><strong>Conta</strong>: quem joga</li>
+              <li><strong>Personagem</strong>: quem é jogado</li>
+              <li><strong>Item</strong>: o que se carrega</li>
+              <li><strong>Magia</strong>: o que se lança</li>
+              <li><strong>Classe</strong>: tipo de personagem</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Conceito</div>
+      <h2 class="slide-title">Atributos</h2>
+      <p class="slide-subtitle">As características que descrevem cada entidade.</p>
+      <div class="slide-content">
+        <div class="two-col">
+          <div>
+            <h3 style="color: var(--accent);">Tipos</h3>
+            <ul class="bullet-list">
+              <li><strong>Simples</strong>: nome, nível, dano</li>
+              <li><strong>Compostos</strong>: endereço (rua, cidade, CEP)</li>
+              <li><strong>Multivalorados</strong>: telefones, tags</li>
+              <li><strong>Derivados</strong>: idade (vem da data_nasc)</li>
+              <li><strong>Identificador</strong>: chave candidata</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="color: var(--accent-2);">Personagem</h3>
+<pre><code><span class="kw">Personagem</span> {
+  id            <span class="cm">// identificador</span>
+  nome
+  classe
+  nivel
+  vida_max
+  mana_max
+  experiencia
+  data_criacao
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Conceito</div>
+      <h2 class="slide-title">Relacionamentos</h2>
+      <p class="slide-subtitle">Como as entidades se conectam. Geralmente é um verbo do domínio.</p>
+      <div class="slide-content">
+        <div class="grid cols-2">
+          <div class="card">
+            <h3>Conta POSSUI Personagem</h3>
+            <p>Uma conta pode ter vários personagens. Cada personagem pertence a uma conta.</p>
+          </div>
+          <div class="card card-accent-2">
+            <h3>Personagem CARREGA Item</h3>
+            <p>Um personagem carrega muitos itens. O mesmo tipo de item pode estar com vários personagens.</p>
+          </div>
+          <div class="card card-success">
+            <h3>Personagem CONHECE Magia</h3>
+            <p>Um personagem aprende várias magias. Cada magia pode ser conhecida por muitos personagens.</p>
+          </div>
+          <div class="card card-warning">
+            <h3>Personagem É DA Classe</h3>
+            <p>Cada personagem tem uma classe. Uma classe pode ter vários personagens.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Conceito</div>
+      <h2 class="slide-title">Cardinalidade</h2>
+      <p class="slide-subtitle">Quantos de um se relacionam com quantos de outro?</p>
+      <div class="slide-content">
+        <div class="grid cols-3">
+          <div class="card">
+            <h3>1 : 1</h3>
+            <p style="color: var(--text); font-size: 1rem;">Personagem ↔ Ficha Detalhada</p>
+            <p>Cada personagem tem exatamente uma ficha. Raro na prática.</p>
+          </div>
+          <div class="card card-accent-2">
+            <h3>1 : N</h3>
+            <p style="color: var(--text); font-size: 1rem;">Conta → Personagens</p>
+            <p>Uma conta tem N personagens. O mais comum.</p>
+          </div>
+          <div class="card card-success">
+            <h3>N : N</h3>
+            <p style="color: var(--text); font-size: 1rem;">Personagem ↔ Item</p>
+            <p>Muitos para muitos. Sempre vira tabela associativa no lógico.</p>
+          </div>
+        </div>
+        <div class="callout">
+          <span class="callout-strong">Pergunta-chave</span>
+          "Um X pode ter quantos Y?" E depois inverte: "Um Y pode estar com quantos X?"
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Aplicando</div>
+      <h2 class="slide-title">DER do nosso RPG</h2>
+      <p class="slide-subtitle">Versão inicial. Vamos refinar nas próximas aulas.</p>
+      <div class="der-diagram">
+        <svg viewBox="0 0 900 460" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <style>
+              .entity { fill: #141a2e; stroke: #a78bfa; stroke-width: 2; }
+              .entity-2 { fill: #141a2e; stroke: #06b6d4; stroke-width: 2; }
+              .entity-3 { fill: #141a2e; stroke: #10b981; stroke-width: 2; }
+              .entity-4 { fill: #141a2e; stroke: #f59e0b; stroke-width: 2; }
+              .entity-text { fill: #e2e8f0; font-family: 'Inter', sans-serif; font-weight: 600; text-anchor: middle; font-size: 16px; }
+              .rel-line { stroke: #64748b; stroke-width: 1.5; fill: none; }
+              .rel-text { fill: #94a3b8; font-family: 'JetBrains Mono', monospace; font-size: 11px; text-anchor: middle; }
+              .card-bg { fill: #0a0e1a; }
+            </style>
+          </defs>
+          <rect class="entity" x="40" y="180" width="160" height="70" rx="8"/>
+          <text class="entity-text" x="120" y="220">Conta</text>
+          <rect class="entity" x="370" y="180" width="160" height="70" rx="8"/>
+          <text class="entity-text" x="450" y="220">Personagem</text>
+          <rect class="entity-4" x="370" y="50" width="160" height="70" rx="8"/>
+          <text class="entity-text" x="450" y="90">Classe</text>
+          <rect class="entity-2" x="700" y="50" width="160" height="70" rx="8"/>
+          <text class="entity-text" x="780" y="90">Item</text>
+          <rect class="entity-3" x="700" y="320" width="160" height="70" rx="8"/>
+          <text class="entity-text" x="780" y="360">Magia</text>
+          <line class="rel-line" x1="200" y1="215" x2="370" y2="215"/>
+          <rect class="card-bg" x="255" y="200" width="60" height="30"/>
+          <text class="rel-text" x="285" y="212">1 : N</text>
+          <text class="rel-text" x="285" y="225">possui</text>
+          <line class="rel-line" x1="450" y1="180" x2="450" y2="120"/>
+          <rect class="card-bg" x="425" y="140" width="50" height="30"/>
+          <text class="rel-text" x="450" y="152">N : 1</text>
+          <text class="rel-text" x="450" y="165">é da</text>
+          <line class="rel-line" x1="530" y1="195" x2="700" y2="100"/>
+          <rect class="card-bg" x="585" y="135" width="80" height="30"/>
+          <text class="rel-text" x="625" y="147">N : N</text>
+          <text class="rel-text" x="625" y="160">carrega</text>
+          <line class="rel-line" x1="530" y1="240" x2="700" y2="345"/>
+          <rect class="card-bg" x="585" y="278" width="80" height="30"/>
+          <text class="rel-text" x="625" y="290">N : N</text>
+          <text class="rel-text" x="625" y="303">conhece</text>
+        </svg>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Boas práticas</div>
+      <h2 class="slide-title">Antes de fechar o DER</h2>
+      <div class="slide-content">
+        <ol class="numbered">
+          <li><strong>Comece pelo domínio, não pelas tabelas</strong><span>Liste o que existe no mundo real. Tabela é detalhe técnico que vem depois.</span></li>
+          <li><strong>Use nomes do negócio</strong><span>"Personagem" e não "tbl_char". O DER é pra todos lerem, não só devs.</span></li>
+          <li><strong>Valide com quem entende</strong><span>Mostre pra um stakeholder e pergunte se a história bate.</span></li>
+          <li><strong>Espere iterar</strong><span>Primeiro DER nunca é o final. Está ok.</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Hora de praticar</div>
+      <div class="badge-section"><span class="badge badge-challenge">Desafio em aula</span></div>
+      <h2 class="slide-title">Adicione Guildas ao RPG</h2>
+      <p class="slide-subtitle">~20 minutos. Pode fazer em dupla.</p>
+      <div class="slide-content">
+        <ul class="bullet-list">
+          <li>Modele a entidade <strong>Guilda</strong> com seus atributos (nome, descrição, data de fundação, líder...)</li>
+          <li>Defina o relacionamento entre <strong>Personagem</strong> e <strong>Guilda</strong></li>
+          <li>Um personagem pode estar em quantas guildas? Uma guilda tem quantos personagens?</li>
+          <li>E o líder da guilda? Como representar?</li>
+          <li>Desenhe no Diagrama de Entidade-Relacionamento</li>
+        </ul>
+        <div class="callout callout-warning">
+          <span class="callout-strong">Dica</span>
+          Não tem resposta única. O importante é a cardinalidade refletir uma regra de negócio que você consiga justificar.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Entrega do dia</div>
+      <div class="badge-section"><span class="badge badge-individual">Projeto Individual</span></div>
+      <h2 class="slide-title">Sistema de Biblioteca</h2>
+      <p class="slide-subtitle">Tema fixo. Começa hoje, evolui durante a semana.</p>
+      <div class="slide-content">
+        <div class="two-col">
+          <div>
+            <h3 style="color: var(--accent-2);">Entidades mínimas</h3>
+            <ul class="bullet-list">
+              <li>Livro</li>
+              <li>Autor</li>
+              <li>Usuário</li>
+              <li>Empréstimo</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="color: var(--accent);">O que entregar hoje</h3>
+            <ul class="bullet-list">
+              <li>Diagrama de Entidade-Relacionamento simples</li>
+              <li>Cardinalidades explícitas</li>
+              <li>Atributos principais por entidade</li>
+              <li>Identificar pelo menos um relacionamento N:N</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Entrega do dia</div>
+      <div class="badge-section"><span class="badge badge-group">Projeto em Grupo</span></div>
+      <h2 class="slide-title">Tema livre, escopo seu</h2>
+      <p class="slide-subtitle">3 a 4 pessoas por grupo. Escolham o domínio que acharem interessante.</p>
+      <div class="slide-content">
+        <div class="two-col">
+          <div>
+            <h3 style="color: var(--success);">Sugestões de tema</h3>
+            <ul class="bullet-list">
+              <li>Pet shop / Veterinária</li>
+              <li>Marketplace de produtos</li>
+              <li>Sistema de streaming</li>
+              <li>Plataforma de delivery</li>
+              <li>Gestão escolar</li>
+              <li>Algo que vocês quiserem</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="color: var(--accent);">O que fazer hoje</h3>
+            <ul class="bullet-list">
+              <li>Definir tema escolhido</li>
+              <li>Lista de entidades principais com atributos</li>
+              <li>DER inicial (pode ser rascunho)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">A seguir</div>
+      <div class="badge-section"><span class="badge badge-next">Aula 1.5</span></div>
+      <h2 class="slide-title">Tirando o DER do papel</h2>
+      <p class="slide-subtitle">Vamos transformar tudo isso em SQL de verdade.</p>
+      <div class="slide-content">
+        <ul class="bullet-list">
+          <li>CREATE DATABASE</li>
+          <li>CREATE TABLE</li>
+          <li>Tipos de dados do SQL Server</li>
+          <li>IDENTITY, NULL vs NOT NULL</li>
+          <li>Primeiras tabelas do RPG rodando</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="slide cover">
+      <div class="cover-tag">Aula 1 / Fim</div>
+      <h1>Dúvidas?</h1>
+      <p class="lead">Próxima parada: SQL de verdade.</p>
+    </section>
+
+  </div>
+  <div class="footer">
+    <div class="footer-brand">Modelagem SQL Server <span class="accent">/</span> Aula 1</div>
+    <div id="counter">1 / 15</div>
+  </div>
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    let i = 0;
+    const counter = document.getElementById('counter');
+    const progress = document.getElementById('progress');
+    function show(n) {
+      slides.forEach(s => s.classList.remove('active'));
+      slides[n].classList.add('active');
+      counter.textContent = `${n + 1} / ${slides.length}`;
+      progress.style.width = `${((n + 1) / slides.length) * 100}%`;
+    }
+    document.addEventListener('keydown', (e) => {
+      if (['ArrowRight', 'PageDown'].includes(e.key) || e.key === ' ') {
+        e.preventDefault();
+        i = Math.min(i + 1, slides.length - 1);
+        show(i);
+      } else if (['ArrowLeft', 'PageUp'].includes(e.key)) {
+        e.preventDefault();
+        i = Math.max(i - 1, 0);
+        show(i);
+      } else if (e.key === 'Home') { i = 0; show(i); }
+      else if (e.key === 'End') { i = slides.length - 1; show(i); }
+      else if (e.key === 'f' || e.key === 'F') {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('a, button, input, pre, code')) return;
+      i = Math.min(i + 1, slides.length - 1);
+      show(i);
+    });
+    show(0);
+  </script>
+</body>
+</html>
