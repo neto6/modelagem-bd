@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aula 2.5 / SELECT avançado</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0e1a;
+      --surface: #141a2e;
+      --surface-2: #1c2440;
+      --border: #2a3656;
+      --text: #e2e8f0;
+      --text-dim: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #a78bfa;
+      --accent-2: #06b6d4;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at top right, rgba(167, 139, 250, 0.08), transparent 50%),
+        radial-gradient(ellipse at bottom left, rgba(6, 182, 212, 0.06), transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .deck { position: relative; width: 100vw; height: 100vh; z-index: 1; }
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 4.5rem 5.5rem 5rem;
+      display: none;
+      flex-direction: column;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .slide.active { display: flex; opacity: 1; }
+    .slide-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    .slide-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+      line-height: 1.1;
+    }
+    .slide-subtitle {
+      font-size: 1.125rem;
+      color: var(--text-dim);
+      margin-bottom: 2rem;
+      max-width: 1000px;
+    }
+    .slide-content {
+      flex: 1;
+      font-size: 1.125rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      min-height: 0;
+    }
+    .slide.cover {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 4rem;
+    }
+    .cover-tag {
+      display: inline-block;
+      padding: 0.5rem 1.25rem;
+      background: rgba(167, 139, 250, 0.1);
+      border: 1px solid rgba(167, 139, 250, 0.3);
+      border-radius: 999px;
+      color: var(--accent);
+      font-size: 0.875rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+    }
+    .cover h1 {
+      font-size: 4.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #e2e8f0 0%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.05;
+    }
+    .cover .lead {
+      font-size: 1.5rem;
+      color: var(--text-dim);
+      max-width: 700px;
+    }
+    .cover-meta {
+      margin-top: 3rem;
+      display: flex;
+      gap: 3rem;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .cover-meta span strong {
+      color: var(--text);
+      display: block;
+      font-size: 1rem;
+      margin-top: 0.5rem;
+      letter-spacing: 0;
+      text-transform: none;
+      font-weight: 600;
+    }
+    .bullet-list { list-style: none; }
+    .bullet-list li {
+      position: relative;
+      padding: 0.5rem 0 0.5rem 1.75rem;
+      font-size: 1.125rem;
+    }
+    .bullet-list li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: bold;
+    }
+    .bullet-list strong { color: var(--text); font-weight: 600; }
+    .numbered-list { list-style: none; counter-reset: step; }
+    .numbered-list li {
+      position: relative;
+      padding: 0.5rem 0 0.5rem 2.5rem;
+      counter-increment: step;
+      font-size: 1.125rem;
+    }
+    .numbered-list li::before {
+      content: counter(step) ".";
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .numbered-list strong { color: var(--text); font-weight: 600; }
+    .grid { display: grid; gap: 1.25rem; }
+    .grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+    .card h3 {
+      color: var(--accent);
+      font-size: 1.125rem;
+      margin-bottom: 0.625rem;
+    }
+    .card p {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+    .card p + p { margin-top: 0.5rem; }
+    .card-accent-2 h3 { color: var(--accent-2); }
+    .card-success h3 { color: var(--success); }
+    .card-warning h3 { color: var(--warning); }
+    .card-danger h3 { color: var(--danger); }
+    .card code {
+      background: rgba(167, 139, 250, 0.1);
+      color: var(--accent);
+      padding: 0.125rem 0.375rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+    code { font-family: 'JetBrains Mono', monospace; }
+    .kw { color: var(--accent); font-weight: 600; }
+    .ty { color: var(--accent-2); }
+    .st { color: var(--success); }
+    .nu { color: var(--warning); }
+    .cm { color: var(--text-muted); font-style: italic; }
+    .fn { color: #f472b6; }
+    .callout {
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      border-left: 3px solid var(--accent);
+      background: rgba(167, 139, 250, 0.06);
+      font-size: 1rem;
+    }
+    .callout-warning { border-color: var(--warning); background: rgba(245, 158, 11, 0.06); }
+    .callout-success { border-color: var(--success); background: rgba(16, 185, 129, 0.06); }
+    .callout-danger { border-color: var(--danger); background: rgba(239, 68, 68, 0.06); }
+    .callout-strong {
+      font-weight: 700;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 0.25rem;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .callout-warning .callout-strong { color: var(--warning); }
+    .callout-success .callout-strong { color: var(--success); }
+    .callout-danger .callout-strong { color: var(--danger); }
+    .badge-section { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .badge {
+      display: inline-block;
+      padding: 0.3rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .badge-challenge { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+    .badge-individual { background: rgba(6, 182, 212, 0.15); color: var(--accent-2); }
+    .badge-group { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .badge-next { background: rgba(167, 139, 250, 0.15); color: var(--accent); }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .two-col h3 {
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 0.875rem;
+      font-weight: 700;
+    }
+    .numbered {
+      list-style: none;
+      counter-reset: step;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .numbered li {
+      counter-increment: step;
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-start;
+    }
+    .numbered li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 50%;
+      background: rgba(167, 139, 250, 0.08);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+    }
+    .numbered li strong {
+      display: block;
+      font-size: 1.125rem;
+      color: var(--text);
+      margin-bottom: 0.125rem;
+    }
+    .numbered li span {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+    }
+    .type-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+    .type-table th {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    .type-table td {
+      padding: 0.625rem 1rem;
+      border-bottom: 1px solid rgba(42, 54, 86, 0.5);
+      vertical-align: top;
+    }
+    .type-table code {
+      color: var(--accent-2);
+      background: rgba(6, 182, 212, 0.08);
+      padding: 0.125rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+    .type-table tr:last-child td { border-bottom: none; }
+    .progress-bar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.3s ease;
+      z-index: 10;
+      width: 0;
+    }
+    .footer {
+      position: fixed;
+      bottom: 1.25rem;
+      left: 0; right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2.5rem;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      z-index: 10;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .footer-brand .accent { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progress"></div>
+  <div class="deck" id="deck">
+
+    <section class="slide cover active">
+      <div class="cover-tag">Aula 2.5</div>
+      <h1>SELECT avançado</h1>
+      <p class="lead">Ordenar, agrupar, contar. Tirando relatórios reais dos dados.</p>
+      <div class="cover-meta">
+        <span>Curso<strong>Modelagem SQL Server</strong></span>
+        <span>Duração<strong>1h30</strong></span>
+        <span>Tema<strong>Universo RPG</strong></span>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Recap</div>
+      <h2 class="slide-title">De onde viemos, pra onde vamos</h2>
+      <p class="slide-subtitle">Aula 2: inserimos dados. Aula 2.5: extraímos respostas deles.</p>
+      <div class="slide-content">
+        <div class="grid cols-2">
+          <div class="card">
+            <h3>Aula 2 (feito)</h3>
+            <p>INSERT, UPDATE, DELETE e SELECT básico com WHERE. Tabelas populadas.</p>
+          </div>
+          <div class="card card-accent-2">
+            <h3>Aula 2.5 (agora)</h3>
+            <p>Ordenar resultados, agrupar registros, calcular somas e médias. SELECT vira ferramenta de análise.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Aula 2.5</div>
+      <h2 class="slide-title">O que você vai sair sabendo</h2>
+      <div class="slide-content">
+        <ul class="bullet-list">
+          <li>Ordenar resultados com <strong>ORDER BY</strong></li>
+          <li>Limitar com <strong>TOP</strong></li>
+          <li>Agrupar com <strong>GROUP BY</strong> e filtrar grupos com <strong>HAVING</strong></li>
+          <li>Usar funções de agregação: <strong>SUM, COUNT, AVG, MIN, MAX</strong></li>
+          <li>Remover duplicatas com <strong>DISTINCT</strong></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Ordenando</div>
+      <h2 class="slide-title">ORDER BY</h2>
+      <p class="slide-subtitle">Decidir a ordem em que os resultados aparecem.</p>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Crescente (padrão)</span>
+<span class="kw">SELECT</span> nome, nivel <span class="kw">FROM</span> personagens
+<span class="kw">ORDER BY</span> nivel;
+
+<span class="cm">-- Decrescente</span>
+<span class="kw">SELECT</span> nome, nivel <span class="kw">FROM</span> personagens
+<span class="kw">ORDER BY</span> nivel <span class="kw">DESC</span>;
+
+<span class="cm">-- Por múltiplas colunas</span>
+<span class="kw">SELECT</span> nome, classe_id, nivel <span class="kw">FROM</span> personagens
+<span class="kw">ORDER BY</span> classe_id <span class="kw">ASC</span>, nivel <span class="kw">DESC</span>;</code></pre>
+        <div class="callout">
+          <span class="callout-strong">Dica</span>
+          Sem ORDER BY, o SQL Server não garante ordem. Não confie em "a ordem em que inseri".
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Limitando</div>
+      <h2 class="slide-title">TOP</h2>
+      <p class="slide-subtitle">Só quero os primeiros N resultados.</p>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Top 10 personagens mais fortes</span>
+<span class="kw">SELECT TOP</span> <span class="nu">10</span> nome, nivel
+<span class="kw">FROM</span> personagens
+<span class="kw">ORDER BY</span> nivel <span class="kw">DESC</span>;
+
+<span class="cm">-- Top 5% mais ricos (em ouro)</span>
+<span class="kw">SELECT TOP</span> <span class="nu">5</span> <span class="kw">PERCENT</span> nome, ouro
+<span class="kw">FROM</span> personagens
+<span class="kw">ORDER BY</span> ouro <span class="kw">DESC</span>;</code></pre>
+        <div class="callout">
+          <span class="callout-strong">Combine sempre com ORDER BY</span>
+          TOP sem ORDER BY pega "qualquer 10", e isso pode mudar a cada execução.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Calculando</div>
+      <h2 class="slide-title">SUM, COUNT, AVG, MIN, MAX</h2>
+      <p class="slide-subtitle">Em vez de listar registros, calcular sobre eles.</p>
+      <div class="slide-content">
+        <table class="type-table">
+          <thead>
+            <tr><th>Função</th><th>Faz</th><th>Exemplo no RPG</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>COUNT(*)</code></td><td>Conta linhas</td><td>Quantos personagens existem</td></tr>
+            <tr><td><code>COUNT(coluna)</code></td><td>Conta valores não nulos</td><td>Quantos personagens já lutaram (data_ultima_luta)</td></tr>
+            <tr><td><code>SUM(coluna)</code></td><td>Soma valores</td><td>Valor total de todos os items</td></tr>
+            <tr><td><code>AVG(coluna)</code></td><td>Média</td><td>Nível médio dos personagens</td></tr>
+            <tr><td><code>MIN(coluna)</code></td><td>Menor valor</td><td>Personagem mais fraco</td></tr>
+            <tr><td><code>MAX(coluna)</code></td><td>Maior valor</td><td>Personagem mais forte</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Calculando</div>
+      <h2 class="slide-title">Calculando sobre toda a tabela</h2>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Quantos personagens existem</span>
+<span class="kw">SELECT</span> <span class="fn">COUNT</span>(*) <span class="kw">AS</span> total_personagens
+<span class="kw">FROM</span> personagens;
+
+<span class="cm">-- Nível médio</span>
+<span class="kw">SELECT</span> <span class="fn">AVG</span>(nivel) <span class="kw">AS</span> nivel_medio
+<span class="kw">FROM</span> personagens;
+
+<span class="cm">-- Valor total dos items mais caros (raros e épicos)</span>
+<span class="kw">SELECT</span> <span class="fn">SUM</span>(valor) <span class="kw">AS</span> valor_total
+<span class="kw">FROM</span> items
+<span class="kw">WHERE</span> raridade <span class="kw">IN</span> (<span class="st">'Raro'</span>, <span class="st">'Épico'</span>);
+
+<span class="cm">-- Várias agregações de uma vez</span>
+<span class="kw">SELECT</span>
+  <span class="fn">COUNT</span>(*) <span class="kw">AS</span> total,
+  <span class="fn">MIN</span>(nivel) <span class="kw">AS</span> menor_nivel,
+  <span class="fn">MAX</span>(nivel) <span class="kw">AS</span> maior_nivel,
+  <span class="fn">AVG</span>(nivel) <span class="kw">AS</span> nivel_medio
+<span class="kw">FROM</span> personagens;</code></pre>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Agrupando</div>
+      <h2 class="slide-title">GROUP BY</h2>
+      <p class="slide-subtitle">Em vez de calcular sobre tudo, calcular por categoria.</p>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Quantos personagens por classe</span>
+<span class="kw">SELECT</span> classe_id, <span class="fn">COUNT</span>(*) <span class="kw">AS</span> total
+<span class="kw">FROM</span> personagens
+<span class="kw">GROUP BY</span> classe_id;
+
+<span class="cm">-- Nível médio por classe</span>
+<span class="kw">SELECT</span> classe_id, <span class="fn">AVG</span>(nivel) <span class="kw">AS</span> nivel_medio
+<span class="kw">FROM</span> personagens
+<span class="kw">GROUP BY</span> classe_id;
+
+<span class="cm">-- Quantos items por raridade</span>
+<span class="kw">SELECT</span> raridade, <span class="fn">COUNT</span>(*) <span class="kw">AS</span> quantidade, <span class="fn">SUM</span>(valor) <span class="kw">AS</span> valor_total
+<span class="kw">FROM</span> items
+<span class="kw">GROUP BY</span> raridade;</code></pre>
+        <div class="callout callout-warning">
+          <span class="callout-strong">Regra de ouro</span>
+          Toda coluna no SELECT precisa estar no GROUP BY ou dentro de uma função de agregação. Senão, erro.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Filtrando grupos</div>
+      <h2 class="slide-title">HAVING</h2>
+      <p class="slide-subtitle">WHERE filtra linhas. HAVING filtra grupos.</p>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Classes com mais de 50 personagens</span>
+<span class="kw">SELECT</span> classe_id, <span class="fn">COUNT</span>(*) <span class="kw">AS</span> total
+<span class="kw">FROM</span> personagens
+<span class="kw">GROUP BY</span> classe_id
+<span class="kw">HAVING</span> <span class="fn">COUNT</span>(*) > <span class="nu">50</span>;
+
+<span class="cm">-- Raridades com valor total acima de 10.000</span>
+<span class="kw">SELECT</span> raridade, <span class="fn">SUM</span>(valor) <span class="kw">AS</span> total
+<span class="kw">FROM</span> items
+<span class="kw">GROUP BY</span> raridade
+<span class="kw">HAVING</span> <span class="fn">SUM</span>(valor) > <span class="nu">10000</span>;</code></pre>
+        <div class="callout">
+          <span class="callout-strong">Pra lembrar</span>
+          WHERE vem antes do GROUP BY (filtra os dados que vão entrar). HAVING vem depois (filtra os grupos resultantes).
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Removendo duplicatas</div>
+      <h2 class="slide-title">DISTINCT</h2>
+      <p class="slide-subtitle">Quero a lista de valores únicos, sem repetir.</p>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Quais tipos de item existem</span>
+<span class="kw">SELECT DISTINCT</span> tipo <span class="kw">FROM</span> items;
+
+<span class="cm">-- Quais classes têm personagens (sem repetir classe_id)</span>
+<span class="kw">SELECT DISTINCT</span> classe_id <span class="kw">FROM</span> personagens;
+
+<span class="cm">-- Combinação única de classe e raridade</span>
+<span class="kw">SELECT DISTINCT</span> classe_id, raridade
+<span class="kw">FROM</span> personagens_items;</code></pre>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Aplicando no RPG</div>
+      <h2 class="slide-title">Top jogadores</h2>
+      <p class="slide-subtitle">Casos clássicos de leaderboard.</p>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Top 10 personagens mais fortes</span>
+<span class="kw">SELECT TOP</span> <span class="nu">10</span> nome, nivel, experiencia
+<span class="kw">FROM</span> personagens
+<span class="kw">ORDER BY</span> nivel <span class="kw">DESC</span>, experiencia <span class="kw">DESC</span>;
+
+<span class="cm">-- Top 3 personagens de cada classe</span>
+<span class="cm">-- (versão simplificada por enquanto, vamos refinar em aulas futuras)</span>
+<span class="kw">SELECT TOP</span> <span class="nu">3</span> nome, classe_id, nivel
+<span class="kw">FROM</span> personagens
+<span class="kw">WHERE</span> classe_id = <span class="nu">1</span>
+<span class="kw">ORDER BY</span> nivel <span class="kw">DESC</span>;</code></pre>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Aplicando no RPG</div>
+      <h2 class="slide-title">Quem é a classe dominante?</h2>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Quantos personagens por classe + nível médio</span>
+<span class="kw">SELECT</span>
+  classe_id,
+  <span class="fn">COUNT</span>(*) <span class="kw">AS</span> total_personagens,
+  <span class="fn">AVG</span>(nivel) <span class="kw">AS</span> nivel_medio,
+  <span class="fn">MAX</span>(nivel) <span class="kw">AS</span> nivel_maximo
+<span class="kw">FROM</span> personagens
+<span class="kw">GROUP BY</span> classe_id
+<span class="kw">ORDER BY</span> total_personagens <span class="kw">DESC</span>;
+
+<span class="cm">-- Classes com pelo menos 100 personagens nível 50+</span>
+<span class="kw">SELECT</span> classe_id, <span class="fn">COUNT</span>(*) <span class="kw">AS</span> total
+<span class="kw">FROM</span> personagens
+<span class="kw">WHERE</span> nivel >= <span class="nu">50</span>
+<span class="kw">GROUP BY</span> classe_id
+<span class="kw">HAVING</span> <span class="fn">COUNT</span>(*) >= <span class="nu">100</span>;</code></pre>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Aplicando no RPG</div>
+      <h2 class="slide-title">Quanto vale o tesouro?</h2>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Total de items por raridade</span>
+<span class="kw">SELECT</span>
+  raridade,
+  <span class="fn">COUNT</span>(*) <span class="kw">AS</span> quantidade,
+  <span class="fn">SUM</span>(valor) <span class="kw">AS</span> valor_total,
+  <span class="fn">AVG</span>(valor) <span class="kw">AS</span> valor_medio,
+  <span class="fn">MAX</span>(valor) <span class="kw">AS</span> valor_maior
+<span class="kw">FROM</span> items
+<span class="kw">GROUP BY</span> raridade
+<span class="kw">ORDER BY</span> valor_total <span class="kw">DESC</span>;
+
+<span class="cm">-- Tipos de item que valem mais de 1000 em média</span>
+<span class="kw">SELECT</span> tipo, <span class="fn">AVG</span>(valor) <span class="kw">AS</span> valor_medio
+<span class="kw">FROM</span> items
+<span class="kw">GROUP BY</span> tipo
+<span class="kw">HAVING</span> <span class="fn">AVG</span>(valor) > <span class="nu">1000</span>
+<span class="kw">ORDER BY</span> valor_medio <span class="kw">DESC</span>;</code></pre>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Boas práticas</div>
+      <h2 class="slide-title">Antes de seguir em frente</h2>
+      <div class="slide-content">
+        <ol class="numbered">
+          <li><strong>Aliases ajudam</strong><span>COUNT(*) AS total em vez de uma coluna sem nome. Resultado fica legível.</span></li>
+          <li><strong>ORDER BY no final</strong><span>É a última cláusula. Depois de WHERE, GROUP BY e HAVING.</span></li>
+          <li><strong>WHERE antes de GROUP BY</strong><span>Filtra dados antes de agrupar. Mais rápido.</span></li>
+          <li><strong>HAVING pra agregações</strong><span>Filtrar resultado de SUM/COUNT/AVG não cabe no WHERE.</span></li>
+          <li><strong>DISTINCT é caro</strong><span>Se você acha que precisa, talvez seu modelo permita duplicatas que não deveria.</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Hora de praticar</div>
+      <div class="badge-section"><span class="badge badge-challenge">Desafio em aula</span></div>
+      <h2 class="slide-title">Tire 5 relatórios do RPG</h2>
+      <p class="slide-subtitle">~25 minutos. Escreva as 5 queries abaixo.</p>
+      <div class="slide-content">
+        <ol class="numbered-list">
+          <li>Os <strong>5 personagens com maior experiência</strong>, mostrando nome, classe e nível</li>
+          <li>Para cada <strong>classe</strong>: quantos personagens existem e o nível médio</li>
+          <li><strong>Quantidade total de items</strong> por raridade, ordenado do mais raro pro mais comum</li>
+          <li><strong>Classes com mais de 100 personagens</strong> ativos</li>
+          <li><strong>Magia mais cara</strong> (maior custo_mana) e a mais barata, com nome e custo</li>
+        </ol>
+        <div class="callout callout-warning">
+          <span class="callout-strong">Atenção</span>
+          Pelo menos 3 dessas queries vão precisar de GROUP BY. Se você não usou em nenhuma, releia o enunciado.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Entrega do dia</div>
+      <div class="badge-section"><span class="badge badge-individual">Projeto Individual</span></div>
+      <h2 class="slide-title">Biblioteca: relatórios</h2>
+      <p class="slide-subtitle">Hora de extrair informação útil dos dados que você inseriu.</p>
+      <div class="slide-content">
+        <div class="two-col">
+          <div>
+            <h3 style="color: var(--accent-2);">Fazer</h3>
+            <ul class="bullet-list">
+              <li>Top 2 livros mais emprestados</li>
+              <li>Quantidade de empréstimos por usuário (ordenado do maior pro menor)</li>
+              <li>Total de livros por autor</li>
+              <li>Autores com mais de 1 livro cadastrado</li>
+              <li>Quantidade de empréstimos por mês (use agregação na coluna de data)</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="color: var(--accent);">Verificar</h3>
+            <ul class="bullet-list">
+              <li>Cada query roda sem erro</li>
+              <li>Aliases nas colunas calculadas</li>
+              <li>ORDER BY onde faz sentido</li>
+              <li>GROUP BY usado pelo menos 3 vezes</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Entrega do dia</div>
+      <div class="badge-section"><span class="badge badge-group">Projeto em Grupo</span></div>
+      <h2 class="slide-title">Relatórios do grupo</h2>
+      <p class="slide-subtitle">Extraiam relatórios analíticos do banco do grupo.</p>
+      <div class="slide-content">
+        <div class="two-col">
+          <div>
+            <h3 style="color: var(--success);">Fazer</h3>
+            <ul class="bullet-list">
+              <li>2 queries que respondam perguntas reais do domínio</li>
+              <li>Pelo menos 1 com GROUP BY</li>
+              <li>Pelo menos 1 com HAVING</li>
+              <li>Pelo menos 1 com TOP</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="color: var(--accent);">Discussão em grupo</h3>
+            <ul class="bullet-list">
+              <li>Que pergunta de negócio cada query responde?</li>
+              <li>Qual foi a mais difícil de escrever?</li>
+              <li>Algum dado ficou esquisito? Talvez o modelo precise ajustar?</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">A seguir</div>
+      <div class="badge-section"><span class="badge badge-next">Aula 3</span></div>
+      <h2 class="slide-title">Constraints: regras no banco</h2>
+      <p class="slide-subtitle">Até agora o banco confia em você. Agora ele vai começar a desconfiar.</p>
+      <div class="slide-content">
+        <ul class="bullet-list">
+          <li>PRIMARY KEY: identificador único de cada linha</li>
+          <li>FOREIGN KEY: referências entre tabelas</li>
+          <li>UNIQUE: garantir que não tem duplicado</li>
+          <li>CHECK: validar regra customizada</li>
+          <li>DEFAULT: valor padrão quando não passar</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="slide cover">
+      <div class="cover-tag">Aula 2.5 / Fim</div>
+      <h1>Dúvidas?</h1>
+      <p class="lead">Dados ordenados, agrupados, contados. Próxima parada: blindar o banco com constraints.</p>
+    </section>
+
+  </div>
+  <div class="footer">
+    <div class="footer-brand">Modelagem SQL Server <span class="accent">/</span> Aula 2.5</div>
+    <div id="counter">1 / 19</div>
+  </div>
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    let i = 0;
+    const counter = document.getElementById('counter');
+    const progress = document.getElementById('progress');
+    function show(n) {
+      slides.forEach(s => s.classList.remove('active'));
+      slides[n].classList.add('active');
+      counter.textContent = `${n + 1} / ${slides.length}`;
+      progress.style.width = `${((n + 1) / slides.length) * 100}%`;
+    }
+    document.addEventListener('keydown', (e) => {
+      if (['ArrowRight', 'PageDown'].includes(e.key) || e.key === ' ') {
+        e.preventDefault();
+        i = Math.min(i + 1, slides.length - 1);
+        show(i);
+      } else if (['ArrowLeft', 'PageUp'].includes(e.key)) {
+        e.preventDefault();
+        i = Math.max(i - 1, 0);
+        show(i);
+      } else if (e.key === 'Home') { i = 0; show(i); }
+      else if (e.key === 'End') { i = slides.length - 1; show(i); }
+      else if (e.key === 'f' || e.key === 'F') {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('a, button, input, pre, code')) return;
+      i = Math.min(i + 1, slides.length - 1);
+      show(i);
+    });
+    show(0);
+  </script>
+</body>
+</html>
