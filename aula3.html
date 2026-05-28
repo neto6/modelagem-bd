@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aula 3 / Constraints</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0e1a;
+      --surface: #141a2e;
+      --surface-2: #1c2440;
+      --border: #2a3656;
+      --text: #e2e8f0;
+      --text-dim: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #a78bfa;
+      --accent-2: #06b6d4;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at top right, rgba(167, 139, 250, 0.08), transparent 50%),
+        radial-gradient(ellipse at bottom left, rgba(6, 182, 212, 0.06), transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .deck { position: relative; width: 100vw; height: 100vh; z-index: 1; }
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 4.5rem 5.5rem 5rem;
+      display: none;
+      flex-direction: column;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .slide.active { display: flex; opacity: 1; }
+    .slide-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    .slide-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+      line-height: 1.1;
+    }
+    .slide-subtitle {
+      font-size: 1.125rem;
+      color: var(--text-dim);
+      margin-bottom: 2rem;
+      max-width: 1000px;
+    }
+    .slide-content {
+      flex: 1;
+      font-size: 1.125rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      min-height: 0;
+    }
+    .slide.cover {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 4rem;
+    }
+    .cover-tag {
+      display: inline-block;
+      padding: 0.5rem 1.25rem;
+      background: rgba(167, 139, 250, 0.1);
+      border: 1px solid rgba(167, 139, 250, 0.3);
+      border-radius: 999px;
+      color: var(--accent);
+      font-size: 0.875rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+    }
+    .cover h1 {
+      font-size: 4.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #e2e8f0 0%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.05;
+    }
+    .cover .lead {
+      font-size: 1.5rem;
+      color: var(--text-dim);
+      max-width: 700px;
+    }
+    .cover-meta {
+      margin-top: 3rem;
+      display: flex;
+      gap: 3rem;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .cover-meta span strong {
+      color: var(--text);
+      display: block;
+      font-size: 1rem;
+      margin-top: 0.5rem;
+      letter-spacing: 0;
+      text-transform: none;
+      font-weight: 600;
+    }
+    .bullet-list { list-style: none; }
+    .bullet-list li {
+      position: relative;
+      padding: 0.5rem 0 0.5rem 1.75rem;
+      font-size: 1.125rem;
+    }
+    .bullet-list li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: bold;
+    }
+    .bullet-list strong { color: var(--text); font-weight: 600; }
+    .grid { display: grid; gap: 1.25rem; }
+    .grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+    .card h3 {
+      color: var(--accent);
+      font-size: 1.125rem;
+      margin-bottom: 0.625rem;
+    }
+    .card p {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+    .card p + p { margin-top: 0.5rem; }
+    .card-accent-2 h3 { color: var(--accent-2); }
+    .card-success h3 { color: var(--success); }
+    .card-warning h3 { color: var(--warning); }
+    .card-danger h3 { color: var(--danger); }
+    .card code {
+      background: rgba(167, 139, 250, 0.1);
+      color: var(--accent);
+      padding: 0.125rem 0.375rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+    code { font-family: 'JetBrains Mono', monospace; }
+    .kw { color: var(--accent); font-weight: 600; }
+    .ty { color: var(--accent-2); }
+    .st { color: var(--success); }
+    .nu { color: var(--warning); }
+    .cm { color: var(--text-muted); font-style: italic; }
+    .fn { color: #f472b6; }
+    .callout {
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      border-left: 3px solid var(--accent);
+      background: rgba(167, 139, 250, 0.06);
+      font-size: 1rem;
+    }
+    .callout-warning { border-color: var(--warning); background: rgba(245, 158, 11, 0.06); }
+    .callout-success { border-color: var(--success); background: rgba(16, 185, 129, 0.06); }
+    .callout-danger { border-color: var(--danger); background: rgba(239, 68, 68, 0.06); }
+    .callout-strong {
+      font-weight: 700;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 0.25rem;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .callout-warning .callout-strong { color: var(--warning); }
+    .callout-success .callout-strong { color: var(--success); }
+    .callout-danger .callout-strong { color: var(--danger); }
+    .badge-section { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .badge {
+      display: inline-block;
+      padding: 0.3rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .badge-challenge { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+    .badge-individual { background: rgba(6, 182, 212, 0.15); color: var(--accent-2); }
+    .badge-group { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .badge-next { background: rgba(167, 139, 250, 0.15); color: var(--accent); }
+    .numbered {
+      list-style: none;
+      counter-reset: step;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .numbered li {
+      counter-increment: step;
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-start;
+    }
+    .numbered li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 50%;
+      background: rgba(167, 139, 250, 0.08);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+    }
+    .numbered li strong {
+      display: block;
+      font-size: 1.125rem;
+      color: var(--text);
+      margin-bottom: 0.125rem;
+    }
+    .numbered li span {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+    }
+    .progress-bar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.3s ease;
+      z-index: 10;
+      width: 0;
+    }
+    .footer {
+      position: fixed;
+      bottom: 1.25rem;
+      left: 0; right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2.5rem;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      z-index: 10;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .footer-brand .accent { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progress"></div>
+  <div class="deck" id="deck">
+
+    <section class="slide cover active">
+      <div class="cover-tag">Aula 3</div>
+      <h1>Constraints</h1>
+      <p class="lead">Até agora o banco confia em você. Agora ele vai começar a desconfiar.</p>
+      <div class="cover-meta">
+        <span>Curso<strong>Modelagem SQL Server</strong></span>
+        <span>Duração<strong>1h30</strong></span>
+        <span>Tema<strong>Universo RPG</strong></span>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Recap</div>
+      <h2 class="slide-title">De onde viemos, pra onde vamos</h2>
+      <p class="slide-subtitle">Aula 2.5: tiramos relatórios. Aula 3: blindamos os dados.</p>
+      <div class="slide-content">
+        <div class="grid cols-2">
+          <div class="card">
+            <h3>Aula 2.5 (feito)</h3>
+            <p>ORDER BY, GROUP BY, agregações. Conseguimos extrair informação dos dados.</p>
+          </div>
+          <div class="card card-accent-2">
+            <h3>Aula 3 (agora)</h3>
+            <p>Adicionar regras no schema. Banco passa a recusar dados inválidos. Menos bug em produção, mais paz no fim de semana.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Aula 3</div>
+      <h2 class="slide-title">O que você vai sair sabendo</h2>
+      <div class="slide-content">
+        <ul class="bullet-list">
+          <li>O que são <strong>constraints</strong> e por que importam</li>
+          <li>Usar <strong>PRIMARY KEY</strong> pra identificar registros</li>
+          <li>Usar <strong>FOREIGN KEY</strong> pra ligar tabelas</li>
+          <li>Garantir não duplicação com <strong>UNIQUE</strong></li>
+          <li>Validar regras com <strong>CHECK</strong></li>
+          <li>Definir valor padrão com <strong>DEFAULT</strong></li>
+          <li>Adicionar e remover constraints com <strong>ALTER TABLE</strong></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Conceito</div>
+      <h2 class="slide-title">Regras escritas no schema</h2>
+      <p class="slide-subtitle">O banco passa a recusar dado que não respeite as regras.</p>
+      <div class="slide-content">
+        <div class="grid cols-2">
+          <div class="card card-warning">
+            <h3>Sem constraints</h3>
+            <p>Aplicação confia que o dado tá correto. Bug no front? Dado lixo no banco. Múltiplas apps escrevem? Cada uma valida do seu jeito.</p>
+          </div>
+          <div class="card card-success">
+            <h3>Com constraints</h3>
+            <p>Regra fica no schema, não no código. Funciona pra qualquer aplicação que escreva. Inconsistência vira erro imediato, não bug silencioso.</p>
+          </div>
+        </div>
+        <div class="callout">
+          <span class="callout-strong">Regra de ouro</span>
+          Não confie só na aplicação. O banco é a última linha de defesa.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Identificação</div>
+      <h2 class="slide-title">PRIMARY KEY</h2>
+      <p class="slide-subtitle">Identificador único e obrigatório de cada linha.</p>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Forma inline (na criação da tabela)</span>
+<span class="kw">CREATE TABLE</span> contas (
+  id            <span class="ty">INT</span> <span class="kw">IDENTITY</span>(1,1) <span class="kw">PRIMARY KEY</span>,
+  login         <span class="ty">NVARCHAR</span>(50) <span class="kw">NOT NULL</span>,
+  email         <span class="ty">NVARCHAR</span>(120) <span class="kw">NOT NULL</span>
+);
+
+<span class="cm">-- Forma com nome (recomendada)</span>
+<span class="kw">CREATE TABLE</span> contas (
+  id            <span class="ty">INT</span> <span class="kw">IDENTITY</span>(1,1) <span class="kw">NOT NULL</span>,
+  login         <span class="ty">NVARCHAR</span>(50) <span class="kw">NOT NULL</span>,
+  email         <span class="ty">NVARCHAR</span>(120) <span class="kw">NOT NULL</span>,
+  <span class="kw">CONSTRAINT</span> PK_contas <span class="kw">PRIMARY KEY</span> (id)
+);</code></pre>
+        <div class="callout">
+          <span class="callout-strong">Características</span>
+          PK é sempre NOT NULL, sempre UNIQUE, e cria um índice automático. Cada tabela tem uma PK só.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Ligando tabelas</div>
+      <h2 class="slide-title">FOREIGN KEY</h2>
+      <p class="slide-subtitle">Referência para outra tabela. Banco garante que o id realmente existe.</p>
+      <div class="slide-content">
+<pre><code><span class="kw">CREATE TABLE</span> personagens (
+  id            <span class="ty">INT</span> <span class="kw">IDENTITY</span>(1,1) <span class="kw">NOT NULL</span>,
+  conta_id      <span class="ty">INT</span> <span class="kw">NOT NULL</span>,
+  classe_id     <span class="ty">INT</span> <span class="kw">NOT NULL</span>,
+  nome          <span class="ty">NVARCHAR</span>(60) <span class="kw">NOT NULL</span>,
+  <span class="kw">CONSTRAINT</span> PK_personagens <span class="kw">PRIMARY KEY</span> (id),
+  <span class="kw">CONSTRAINT</span> FK_personagens_contas
+    <span class="kw">FOREIGN KEY</span> (conta_id) <span class="kw">REFERENCES</span> contas(id),
+  <span class="kw">CONSTRAINT</span> FK_personagens_classes
+    <span class="kw">FOREIGN KEY</span> (classe_id) <span class="kw">REFERENCES</span> classes(id)
+);</code></pre>
+        <div class="callout callout-warning">
+          <span class="callout-strong">Banco vai recusar</span>
+          INSERT em personagens com conta_id que não existe em contas. E não deixa deletar uma conta que tem personagens (a menos que configure ON DELETE, vamos ver na Aula 3.5).
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Sem duplicatas</div>
+      <h2 class="slide-title">UNIQUE</h2>
+      <p class="slide-subtitle">Garantir que nenhum valor se repita naquela coluna.</p>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Login e email não podem repetir entre contas</span>
+<span class="kw">CREATE TABLE</span> contas (
+  id            <span class="ty">INT</span> <span class="kw">IDENTITY</span>(1,1) <span class="kw">NOT NULL</span>,
+  login         <span class="ty">NVARCHAR</span>(50) <span class="kw">NOT NULL</span>,
+  email         <span class="ty">NVARCHAR</span>(120) <span class="kw">NOT NULL</span>,
+  <span class="kw">CONSTRAINT</span> PK_contas <span class="kw">PRIMARY KEY</span> (id),
+  <span class="kw">CONSTRAINT</span> UQ_contas_login <span class="kw">UNIQUE</span> (login),
+  <span class="kw">CONSTRAINT</span> UQ_contas_email <span class="kw">UNIQUE</span> (email)
+);</code></pre>
+        <div class="callout">
+          <span class="callout-strong">PK vs UNIQUE</span>
+          PK também é único, mas é o identificador principal. UNIQUE serve pra outras colunas que precisam ser únicas (login, email, CPF, etc).
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Validando regras</div>
+      <h2 class="slide-title">CHECK</h2>
+      <p class="slide-subtitle">Regra customizada que cada linha precisa respeitar.</p>
+      <div class="slide-content">
+<pre><code><span class="kw">CREATE TABLE</span> personagens (
+  id            <span class="ty">INT</span> <span class="kw">IDENTITY</span>(1,1) <span class="kw">NOT NULL</span>,
+  nome          <span class="ty">NVARCHAR</span>(60) <span class="kw">NOT NULL</span>,
+  nivel         <span class="ty">SMALLINT</span> <span class="kw">NOT NULL</span>,
+  vida_max      <span class="ty">INT</span> <span class="kw">NOT NULL</span>,
+  <span class="kw">CONSTRAINT</span> PK_personagens <span class="kw">PRIMARY KEY</span> (id),
+  <span class="kw">CONSTRAINT</span> CK_personagens_nivel <span class="kw">CHECK</span> (nivel <span class="kw">BETWEEN</span> <span class="nu">1</span> <span class="kw">AND</span> <span class="nu">100</span>),
+  <span class="kw">CONSTRAINT</span> CK_personagens_vida <span class="kw">CHECK</span> (vida_max > <span class="nu">0</span>)
+);</code></pre>
+        <div class="callout">
+          <span class="callout-strong">Exemplos de uso</span>
+          Valor monetário positivo, data de fim depois da data de início, status dentro de uma lista de valores válidos.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Valor padrão</div>
+      <h2 class="slide-title">DEFAULT</h2>
+      <p class="slide-subtitle">Se ninguém passar valor, o banco preenche com esse.</p>
+      <div class="slide-content">
+<pre><code><span class="kw">CREATE TABLE</span> contas (
+  id            <span class="ty">INT</span> <span class="kw">IDENTITY</span>(1,1) <span class="kw">NOT NULL</span>,
+  login         <span class="ty">NVARCHAR</span>(50) <span class="kw">NOT NULL</span>,
+  ativo         <span class="ty">BIT</span> <span class="kw">NOT NULL</span> <span class="kw">DEFAULT</span> <span class="nu">1</span>,
+  data_criacao  <span class="ty">DATETIME</span> <span class="kw">NOT NULL</span> <span class="kw">DEFAULT</span> <span class="fn">GETDATE</span>(),
+  <span class="kw">CONSTRAINT</span> PK_contas <span class="kw">PRIMARY KEY</span> (id)
+);
+
+<span class="cm">-- Agora dá pra inserir sem passar ativo nem data_criacao</span>
+<span class="kw">INSERT INTO</span> contas (login) <span class="kw">VALUES</span> (<span class="st">'arthas'</span>);</code></pre>
+        <div class="callout callout-success">
+          <span class="callout-strong">Combina bem com NOT NULL</span>
+          Coluna obrigatória, mas com valor automático. Você não precisa lembrar de preencher.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Adicionando depois</div>
+      <h2 class="slide-title">Quando a tabela já existe</h2>
+      <p class="slide-subtitle">Dá pra adicionar e remover constraints sem recriar a tabela.</p>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Adicionar PRIMARY KEY</span>
+<span class="kw">ALTER TABLE</span> contas
+<span class="kw">ADD CONSTRAINT</span> PK_contas <span class="kw">PRIMARY KEY</span> (id);
+
+<span class="cm">-- Adicionar FOREIGN KEY</span>
+<span class="kw">ALTER TABLE</span> personagens
+<span class="kw">ADD CONSTRAINT</span> FK_personagens_contas
+  <span class="kw">FOREIGN KEY</span> (conta_id) <span class="kw">REFERENCES</span> contas(id);
+
+<span class="cm">-- Adicionar CHECK</span>
+<span class="kw">ALTER TABLE</span> personagens
+<span class="kw">ADD CONSTRAINT</span> CK_personagens_nivel <span class="kw">CHECK</span> (nivel >= <span class="nu">1</span>);
+
+<span class="cm">-- Remover constraint</span>
+<span class="kw">ALTER TABLE</span> personagens
+<span class="kw">DROP CONSTRAINT</span> CK_personagens_nivel;</code></pre>
+        <div class="callout callout-warning">
+          <span class="callout-strong">Cuidado</span>
+          Se a tabela já tem dados que violam a regra nova, ADD CONSTRAINT falha. Limpe os dados primeiro ou use WITH NOCHECK (avançado, evite).
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Aplicando no RPG</div>
+      <h2 class="slide-title">Tabela contas com todas as constraints</h2>
+      <div class="slide-content">
+<pre><code><span class="kw">CREATE TABLE</span> contas (
+  id            <span class="ty">INT</span> <span class="kw">IDENTITY</span>(1,1) <span class="kw">NOT NULL</span>,
+  login         <span class="ty">NVARCHAR</span>(50) <span class="kw">NOT NULL</span>,
+  email         <span class="ty">NVARCHAR</span>(120) <span class="kw">NOT NULL</span>,
+  senha_hash    <span class="ty">NVARCHAR</span>(255) <span class="kw">NOT NULL</span>,
+  data_criacao  <span class="ty">DATETIME</span> <span class="kw">NOT NULL</span> <span class="kw">DEFAULT</span> <span class="fn">GETDATE</span>(),
+  ativo         <span class="ty">BIT</span> <span class="kw">NOT NULL</span> <span class="kw">DEFAULT</span> <span class="nu">1</span>,
+  <span class="kw">CONSTRAINT</span> PK_contas <span class="kw">PRIMARY KEY</span> (id),
+  <span class="kw">CONSTRAINT</span> UQ_contas_login <span class="kw">UNIQUE</span> (login),
+  <span class="kw">CONSTRAINT</span> UQ_contas_email <span class="kw">UNIQUE</span> (email),
+  <span class="kw">CONSTRAINT</span> CK_contas_email <span class="kw">CHECK</span> (email <span class="kw">LIKE</span> <span class="st">'%@%.%'</span>)
+);</code></pre>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Aplicando no RPG</div>
+      <h2 class="slide-title">Personagens com FKs e regras</h2>
+      <div class="slide-content">
+<pre><code><span class="kw">CREATE TABLE</span> personagens (
+  id            <span class="ty">INT</span> <span class="kw">IDENTITY</span>(1,1) <span class="kw">NOT NULL</span>,
+  conta_id      <span class="ty">INT</span> <span class="kw">NOT NULL</span>,
+  classe_id     <span class="ty">INT</span> <span class="kw">NOT NULL</span>,
+  nome          <span class="ty">NVARCHAR</span>(60) <span class="kw">NOT NULL</span>,
+  nivel         <span class="ty">SMALLINT</span> <span class="kw">NOT NULL</span> <span class="kw">DEFAULT</span> <span class="nu">1</span>,
+  vida_max      <span class="ty">INT</span> <span class="kw">NOT NULL</span>,
+  mana_max      <span class="ty">INT</span> <span class="kw">NOT NULL</span>,
+  experiencia   <span class="ty">BIGINT</span> <span class="kw">NOT NULL</span> <span class="kw">DEFAULT</span> <span class="nu">0</span>,
+  data_criacao  <span class="ty">DATETIME</span> <span class="kw">NOT NULL</span> <span class="kw">DEFAULT</span> <span class="fn">GETDATE</span>(),
+  <span class="kw">CONSTRAINT</span> PK_personagens <span class="kw">PRIMARY KEY</span> (id),
+  <span class="kw">CONSTRAINT</span> FK_personagens_contas <span class="kw">FOREIGN KEY</span> (conta_id) <span class="kw">REFERENCES</span> contas(id),
+  <span class="kw">CONSTRAINT</span> FK_personagens_classes <span class="kw">FOREIGN KEY</span> (classe_id) <span class="kw">REFERENCES</span> classes(id),
+  <span class="kw">CONSTRAINT</span> CK_personagens_nivel <span class="kw">CHECK</span> (nivel <span class="kw">BETWEEN</span> <span class="nu">1</span> <span class="kw">AND</span> <span class="nu">100</span>),
+  <span class="kw">CONSTRAINT</span> CK_personagens_vida <span class="kw">CHECK</span> (vida_max > <span class="nu">0</span>),
+  <span class="kw">CONSTRAINT</span> CK_personagens_mana <span class="kw">CHECK</span> (mana_max >= <span class="nu">0</span>)
+);</code></pre>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Aplicando no RPG</div>
+      <h2 class="slide-title">Items com regras de negócio</h2>
+      <div class="slide-content">
+<pre><code><span class="kw">CREATE TABLE</span> items (
+  id            <span class="ty">INT</span> <span class="kw">IDENTITY</span>(1,1) <span class="kw">NOT NULL</span>,
+  nome          <span class="ty">NVARCHAR</span>(80) <span class="kw">NOT NULL</span>,
+  tipo          <span class="ty">NVARCHAR</span>(30) <span class="kw">NOT NULL</span>,
+  raridade      <span class="ty">NVARCHAR</span>(20) <span class="kw">NOT NULL</span> <span class="kw">DEFAULT</span> <span class="st">'Comum'</span>,
+  valor         <span class="ty">DECIMAL</span>(10,2) <span class="kw">NOT NULL</span>,
+  <span class="kw">CONSTRAINT</span> PK_items <span class="kw">PRIMARY KEY</span> (id),
+  <span class="kw">CONSTRAINT</span> UQ_items_nome <span class="kw">UNIQUE</span> (nome),
+  <span class="kw">CONSTRAINT</span> CK_items_valor <span class="kw">CHECK</span> (valor >= <span class="nu">0</span>),
+  <span class="kw">CONSTRAINT</span> CK_items_raridade <span class="kw">CHECK</span> (raridade <span class="kw">IN</span> (<span class="st">'Comum'</span>, <span class="st">'Incomum'</span>, <span class="st">'Raro'</span>, <span class="st">'Épico'</span>, <span class="st">'Lendário'</span>))
+);</code></pre>
+        <div class="callout callout-success">
+          <span class="callout-strong">CHECK com IN</span>
+          Ótimo pra restringir um campo a uma lista fechada de valores. Alternativa a criar uma tabela separada de "raridades".
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Vendo as constraints em ação</div>
+      <h2 class="slide-title">Erros úteis</h2>
+      <p class="slide-subtitle">O banco bloqueia o INSERT/UPDATE inválido e mostra qual constraint quebrou.</p>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Tenta inserir personagem com conta inexistente</span>
+<span class="kw">INSERT INTO</span> personagens (conta_id, classe_id, nome, vida_max, mana_max)
+<span class="kw">VALUES</span> (<span class="nu">9999</span>, <span class="nu">1</span>, <span class="st">'Hacker'</span>, <span class="nu">100</span>, <span class="nu">50</span>);
+<span class="cm">-- ERRO: violação de FK_personagens_contas</span>
+
+<span class="cm">-- Tenta cadastrar duas contas com mesmo login</span>
+<span class="kw">INSERT INTO</span> contas (login, email, senha_hash) <span class="kw">VALUES</span> (<span class="st">'arthas'</span>, <span class="st">'a@b.com'</span>, <span class="st">'h'</span>);
+<span class="kw">INSERT INTO</span> contas (login, email, senha_hash) <span class="kw">VALUES</span> (<span class="st">'arthas'</span>, <span class="st">'c@d.com'</span>, <span class="st">'h'</span>);
+<span class="cm">-- ERRO: violação de UQ_contas_login</span>
+
+<span class="cm">-- Tenta criar personagem nível 200</span>
+<span class="kw">INSERT INTO</span> personagens (conta_id, classe_id, nome, nivel, vida_max, mana_max)
+<span class="kw">VALUES</span> (<span class="nu">1</span>, <span class="nu">1</span>, <span class="st">'GodMode'</span>, <span class="nu">200</span>, <span class="nu">100</span>, <span class="nu">50</span>);
+<span class="cm">-- ERRO: violação de CK_personagens_nivel</span></code></pre>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Boas práticas</div>
+      <h2 class="slide-title">Antes de seguir em frente</h2>
+      <div class="slide-content">
+        <ol class="numbered">
+          <li><strong>Nomeie suas constraints</strong><span>CONSTRAINT FK_personagens_contas é melhor que deixar o SQL Server gerar FK__personag__conta__1234ABCD. Quando der erro, fica claro qual quebrou.</span></li>
+          <li><strong>Padrão de nomes</strong><span>PK_tabela, FK_tabela_referencia, UQ_tabela_coluna, CK_tabela_coluna. Consistência ajuda a manter.</span></li>
+          <li><strong>Constraint no banco, não só no código</strong><span>Aplicação tem bug. Pessoa nova chega e bypassa validação. Banco é a fonte da verdade.</span></li>
+          <li><strong>CHECK pra regras simples</strong><span>Lógica complexa fica difícil de manter no CHECK. Pra esses casos, considere triggers (Aula 5).</span></li>
+          <li><strong>Pense no impacto</strong><span>Adicionar constraint em tabela cheia em produção pode levar horas. Janela de manutenção.</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Entrega do dia</div>
+      <div class="badge-section"><span class="badge badge-individual">Projeto Individual</span></div>
+      <h2 class="slide-title">Biblioteca: blindando o sistema</h2>
+      <p class="slide-subtitle">Aplique constraints em todas as tabelas da biblioteca.</p>
+      <div class="slide-content">
+        <ul class="bullet-list">
+          <li>PRIMARY KEY em todas as tabelas</li>
+          <li>FOREIGN KEY ligando livros → autores, empréstimos → usuários, empréstimos → livros</li>
+          <li>UNIQUE no nome dos livros</li>
+          <li>CHECK garantindo data_devolucao >= data_emprestimo</li>
+          <li>DEFAULT em colunas que faz sentido (data de cadastro, status)</li>
+          <li>Teste: tente inserir dados inválidos e veja o banco recusar</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">A seguir</div>
+      <div class="badge-section"><span class="badge badge-next">Aula 3.5</span></div>
+      <h2 class="slide-title">Relacionamentos</h2>
+      <p class="slide-subtitle">FK já garante a ligação. Agora vamos modelar relacionamentos 1:1, 1:N e N:N de verdade.</p>
+      <div class="slide-content">
+        <ul class="bullet-list">
+          <li>Tipos de relacionamento e como implementar cada um</li>
+          <li>Tabela associativa para N:N</li>
+          <li>ON DELETE / ON UPDATE: o que acontece em cascata</li>
+          <li>Auto-relacionamento (o líder da guilda é um personagem)</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="slide cover">
+      <div class="cover-tag">Aula 3 / Fim</div>
+      <h1>Dúvidas?</h1>
+      <p class="lead">Banco blindado. Próxima parada: modelar relacionamentos de verdade.</p>
+    </section>
+
+  </div>
+  <div class="footer">
+    <div class="footer-brand">Modelagem SQL Server <span class="accent">/</span> Aula 3</div>
+    <div id="counter">1 / 18</div>
+  </div>
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    let i = 0;
+    const counter = document.getElementById('counter');
+    const progress = document.getElementById('progress');
+    function show(n) {
+      slides.forEach(s => s.classList.remove('active'));
+      slides[n].classList.add('active');
+      counter.textContent = `${n + 1} / ${slides.length}`;
+      progress.style.width = `${((n + 1) / slides.length) * 100}%`;
+    }
+    document.addEventListener('keydown', (e) => {
+      if (['ArrowRight', 'PageDown'].includes(e.key) || e.key === ' ') {
+        e.preventDefault();
+        i = Math.min(i + 1, slides.length - 1);
+        show(i);
+      } else if (['ArrowLeft', 'PageUp'].includes(e.key)) {
+        e.preventDefault();
+        i = Math.max(i - 1, 0);
+        show(i);
+      } else if (e.key === 'Home') { i = 0; show(i); }
+      else if (e.key === 'End') { i = slides.length - 1; show(i); }
+      else if (e.key === 'f' || e.key === 'F') {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('a, button, input, pre, code')) return;
+      i = Math.min(i + 1, slides.length - 1);
+      show(i);
+    });
+    show(0);
+  </script>
+</body>
+</html>
