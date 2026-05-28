@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aula 4 / JOINs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0e1a;
+      --surface: #141a2e;
+      --surface-2: #1c2440;
+      --border: #2a3656;
+      --text: #e2e8f0;
+      --text-dim: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #a78bfa;
+      --accent-2: #06b6d4;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at top right, rgba(167, 139, 250, 0.08), transparent 50%),
+        radial-gradient(ellipse at bottom left, rgba(6, 182, 212, 0.06), transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .deck { position: relative; width: 100vw; height: 100vh; z-index: 1; }
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 4.5rem 5.5rem 5rem;
+      display: none;
+      flex-direction: column;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .slide.active { display: flex; opacity: 1; }
+    .slide-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    .slide-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+      line-height: 1.1;
+    }
+    .slide-subtitle {
+      font-size: 1.125rem;
+      color: var(--text-dim);
+      margin-bottom: 2rem;
+      max-width: 1000px;
+    }
+    .slide-content {
+      flex: 1;
+      font-size: 1.125rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      min-height: 0;
+    }
+    .slide.cover {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 4rem;
+    }
+    .cover-tag {
+      display: inline-block;
+      padding: 0.5rem 1.25rem;
+      background: rgba(167, 139, 250, 0.1);
+      border: 1px solid rgba(167, 139, 250, 0.3);
+      border-radius: 999px;
+      color: var(--accent);
+      font-size: 0.875rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+    }
+    .cover h1 {
+      font-size: 4.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #e2e8f0 0%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.05;
+    }
+    .cover .lead {
+      font-size: 1.5rem;
+      color: var(--text-dim);
+      max-width: 700px;
+    }
+    .cover-meta {
+      margin-top: 3rem;
+      display: flex;
+      gap: 3rem;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .cover-meta span strong {
+      color: var(--text);
+      display: block;
+      font-size: 1rem;
+      margin-top: 0.5rem;
+      letter-spacing: 0;
+      text-transform: none;
+      font-weight: 600;
+    }
+    .bullet-list { list-style: none; }
+    .bullet-list li {
+      position: relative;
+      padding: 0.5rem 0 0.5rem 1.75rem;
+      font-size: 1.125rem;
+    }
+    .bullet-list li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: bold;
+    }
+    .bullet-list strong { color: var(--text); font-weight: 600; }
+    .grid { display: grid; gap: 1.25rem; }
+    .grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+    .card h3 {
+      color: var(--accent);
+      font-size: 1.125rem;
+      margin-bottom: 0.625rem;
+    }
+    .card p {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+    .card p + p { margin-top: 0.5rem; }
+    .card-accent-2 h3 { color: var(--accent-2); }
+    .card-success h3 { color: var(--success); }
+    .card-warning h3 { color: var(--warning); }
+    .card-danger h3 { color: var(--danger); }
+    .card code {
+      background: rgba(167, 139, 250, 0.1);
+      color: var(--accent);
+      padding: 0.125rem 0.375rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+    code { font-family: 'JetBrains Mono', monospace; }
+    .kw { color: var(--accent); font-weight: 600; }
+    .ty { color: var(--accent-2); }
+    .st { color: var(--success); }
+    .nu { color: var(--warning); }
+    .cm { color: var(--text-muted); font-style: italic; }
+    .fn { color: #f472b6; }
+    .callout {
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      border-left: 3px solid var(--accent);
+      background: rgba(167, 139, 250, 0.06);
+      font-size: 1rem;
+    }
+    .callout-warning { border-color: var(--warning); background: rgba(245, 158, 11, 0.06); }
+    .callout-success { border-color: var(--success); background: rgba(16, 185, 129, 0.06); }
+    .callout-danger { border-color: var(--danger); background: rgba(239, 68, 68, 0.06); }
+    .callout-strong {
+      font-weight: 700;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 0.25rem;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .callout-warning .callout-strong { color: var(--warning); }
+    .callout-success .callout-strong { color: var(--success); }
+    .callout-danger .callout-strong { color: var(--danger); }
+    .badge-section { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .badge {
+      display: inline-block;
+      padding: 0.3rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .badge-challenge { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+    .badge-individual { background: rgba(6, 182, 212, 0.15); color: var(--accent-2); }
+    .badge-group { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .badge-next { background: rgba(167, 139, 250, 0.15); color: var(--accent); }
+    .numbered {
+      list-style: none;
+      counter-reset: step;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .numbered li {
+      counter-increment: step;
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-start;
+    }
+    .numbered li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 50%;
+      background: rgba(167, 139, 250, 0.08);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+    }
+    .numbered li strong {
+      display: block;
+      font-size: 1.125rem;
+      color: var(--text);
+      margin-bottom: 0.125rem;
+    }
+    .numbered li span {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+    }
+    .progress-bar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.3s ease;
+      z-index: 10;
+      width: 0;
+    }
+    .footer {
+      position: fixed;
+      bottom: 1.25rem;
+      left: 0; right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2.5rem;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      z-index: 10;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .footer-brand .accent { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progress"></div>
+  <div class="deck" id="deck">
+
+    <section class="slide cover active">
+      <div class="cover-tag">Aula 4</div>
+      <h1>JOINs</h1>
+      <p class="lead">Tabelas conectadas. Hora de buscar dados de várias ao mesmo tempo.</p>
+      <div class="cover-meta">
+        <span>Curso<strong>Modelagem SQL Server</strong></span>
+        <span>Duração<strong>1h30</strong></span>
+        <span>Tema<strong>Universo RPG</strong></span>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Recap</div>
+      <h2 class="slide-title">De onde viemos, pra onde vamos</h2>
+      <p class="slide-subtitle">Aula 3.5: relacionamentos no modelo. Aula 4: consultar esses relacionamentos.</p>
+      <div class="slide-content">
+        <div class="grid cols-2">
+          <div class="card">
+            <h3>Aula 3.5 (feito)</h3>
+            <p>FKs, tabelas associativas, ON DELETE/UPDATE. Modelo conectado.</p>
+          </div>
+          <div class="card card-accent-2">
+            <h3>Aula 4 (agora)</h3>
+            <p>SELECT que pega dados de várias tabelas ao mesmo tempo. INNER, LEFT, RIGHT, FULL.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Aula 4</div>
+      <h2 class="slide-title">O que você vai sair sabendo</h2>
+      <div class="slide-content">
+        <ul class="bullet-list">
+          <li>Por que <strong>JOIN</strong> é necessário</li>
+          <li>Usar <strong>INNER JOIN</strong> quando só quer o que combina</li>
+          <li>Usar <strong>LEFT/RIGHT JOIN</strong> quando quer manter um lado</li>
+          <li>Usar <strong>FULL JOIN</strong> quando quer tudo dos dois lados</li>
+          <li>Encadear múltiplos JOINs</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Conceito</div>
+      <h2 class="slide-title">O problema sem JOIN</h2>
+      <p class="slide-subtitle">Modelo normalizado guarda dados em tabelas separadas. Mas quase sempre você precisa de tudo junto.</p>
+      <div class="slide-content">
+        <div class="grid cols-2">
+          <div class="card card-warning">
+            <h3>Sem JOIN</h3>
+            <p>SELECT em personagens te dá conta_id e classe_id, que são números. Você não consegue ver o nome do dono ou da classe.</p>
+          </div>
+          <div class="card card-success">
+            <h3>Com JOIN</h3>
+            <p>Combina linhas de personagens com linhas de contas e classes. Resultado tem nome do personagem, login do dono e nome da classe na mesma linha.</p>
+          </div>
+        </div>
+        <div class="callout">
+          <span class="callout-strong">Regra</span>
+          Cada FK no modelo é um JOIN potencial nas suas queries.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Tipos de JOIN</div>
+      <h2 class="slide-title">INNER JOIN</h2>
+      <p class="slide-subtitle">Só traz linhas que combinam nos dois lados.</p>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Personagens com nome da classe (só os que têm classe válida)</span>
+<span class="kw">SELECT</span>
+  p.nome <span class="kw">AS</span> personagem,
+  c.nome <span class="kw">AS</span> classe,
+  p.nivel
+<span class="kw">FROM</span> personagens p
+<span class="kw">INNER JOIN</span> classes c <span class="kw">ON</span> p.classe_id = c.id;</code></pre>
+        <div class="callout">
+          <span class="callout-strong">Comportamento</span>
+          Se o personagem tem classe_id NULL ou apontando pra classe que não existe, ele não aparece. INNER JOIN é restritivo.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Tipos de JOIN</div>
+      <h2 class="slide-title">LEFT JOIN</h2>
+      <p class="slide-subtitle">Traz tudo do lado esquerdo. Do direito, só o que combina (NULL se não tiver).</p>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Todos os personagens, com guilda se tiver</span>
+<span class="kw">SELECT</span>
+  p.nome <span class="kw">AS</span> personagem,
+  g.nome <span class="kw">AS</span> guilda
+<span class="kw">FROM</span> personagens p
+<span class="kw">LEFT JOIN</span> guildas g <span class="kw">ON</span> p.guilda_id = g.id;</code></pre>
+        <div class="callout callout-success">
+          <span class="callout-strong">Caso clássico</span>
+          "Liste X e o Y associado, mesmo que não tenha Y." Resultado: linhas onde guilda é NULL pra personagens sem guilda.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Tipos de JOIN</div>
+      <h2 class="slide-title">RIGHT JOIN</h2>
+      <p class="slide-subtitle">O contrário do LEFT. Tudo do lado direito.</p>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Todas as classes, com personagens (mesmo classes sem nenhum)</span>
+<span class="kw">SELECT</span>
+  c.nome <span class="kw">AS</span> classe,
+  p.nome <span class="kw">AS</span> personagem
+<span class="kw">FROM</span> personagens p
+<span class="kw">RIGHT JOIN</span> classes c <span class="kw">ON</span> p.classe_id = c.id;</code></pre>
+        <div class="callout callout-warning">
+          <span class="callout-strong">Na prática</span>
+          RIGHT JOIN é raro. Em vez de RIGHT, inverta a ordem e use LEFT. Fica mais natural de ler.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Tipos de JOIN</div>
+      <h2 class="slide-title">FULL JOIN</h2>
+      <p class="slide-subtitle">Tudo dos dois lados. Onde não combina, vira NULL.</p>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Comparar duas listas: personagens e classes</span>
+<span class="cm">-- Mostra personagens sem classe, classes sem personagens, e o que combina</span>
+<span class="kw">SELECT</span>
+  p.nome <span class="kw">AS</span> personagem,
+  c.nome <span class="kw">AS</span> classe
+<span class="kw">FROM</span> personagens p
+<span class="kw">FULL JOIN</span> classes c <span class="kw">ON</span> p.classe_id = c.id;</code></pre>
+        <div class="callout">
+          <span class="callout-strong">Quando usar</span>
+          Auditoria, comparar duas fontes pra ver o que está faltando em cada lado. Não é o JOIN do dia a dia.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Encadeando</div>
+      <h2 class="slide-title">Vários JOINs em sequência</h2>
+      <p class="slide-subtitle">Cada JOIN adiciona mais informação ao resultado.</p>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Personagem, conta, classe e guilda (tudo de uma vez)</span>
+<span class="kw">SELECT</span>
+  p.nome <span class="kw">AS</span> personagem,
+  c.login <span class="kw">AS</span> dono,
+  cl.nome <span class="kw">AS</span> classe,
+  g.nome <span class="kw">AS</span> guilda
+<span class="kw">FROM</span> personagens p
+<span class="kw">INNER JOIN</span> contas c <span class="kw">ON</span> p.conta_id = c.id
+<span class="kw">INNER JOIN</span> classes cl <span class="kw">ON</span> p.classe_id = cl.id
+<span class="kw">LEFT JOIN</span> guildas g <span class="kw">ON</span> p.guilda_id = g.id
+<span class="kw">WHERE</span> p.nivel >= <span class="nu">50</span>
+<span class="kw">ORDER BY</span> p.nivel <span class="kw">DESC</span>;</code></pre>
+        <div class="callout">
+          <span class="callout-strong">Misture INNER e LEFT</span>
+          INNER pra obrigatórios, LEFT pros opcionais. No exemplo: conta e classe são obrigatórias, guilda é opcional.
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Boas práticas</div>
+      <h2 class="slide-title">Apelidos pras tabelas</h2>
+      <p class="slide-subtitle">Sem alias, queries com JOIN ficam ilegíveis.</p>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Sem alias (verboso)</span>
+<span class="kw">SELECT</span> personagens.nome, classes.nome
+<span class="kw">FROM</span> personagens
+<span class="kw">INNER JOIN</span> classes <span class="kw">ON</span> personagens.classe_id = classes.id;
+
+<span class="cm">-- Com alias (legível)</span>
+<span class="kw">SELECT</span> p.nome, c.nome
+<span class="kw">FROM</span> personagens p
+<span class="kw">INNER JOIN</span> classes c <span class="kw">ON</span> p.classe_id = c.id;</code></pre>
+        <div class="callout callout-success">
+          <span class="callout-strong">Padrão</span>
+          Use letras curtas e mnemônicas. p pra personagens, c pra classes, i pra items. Quando tabelas começam com a mesma letra, escolha 2-3 caracteres (pe e pa, por exemplo).
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Aplicando no RPG</div>
+      <h2 class="slide-title">Mostrando inventário com nome dos items</h2>
+      <div class="slide-content">
+<pre><code><span class="cm">-- O inventário guarda só os IDs. Pra ver os nomes, JOIN com items.</span>
+<span class="kw">SELECT</span>
+  p.nome <span class="kw">AS</span> personagem,
+  i.nome <span class="kw">AS</span> item,
+  i.raridade,
+  inv.quantidade,
+  i.valor * inv.quantidade <span class="kw">AS</span> valor_total
+<span class="kw">FROM</span> inventario inv
+<span class="kw">INNER JOIN</span> personagens p <span class="kw">ON</span> inv.personagem_id = p.id
+<span class="kw">INNER JOIN</span> items i <span class="kw">ON</span> inv.item_id = i.id
+<span class="kw">WHERE</span> p.id = <span class="nu">1</span>
+<span class="kw">ORDER BY</span> i.valor <span class="kw">DESC</span>;</code></pre>
+        <div class="callout">
+          <span class="callout-strong">Padrão importante</span>
+          Tabela associativa quase sempre vem com 2+ JOINs (um pra cada lado da relação).
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Aplicando no RPG</div>
+      <h2 class="slide-title">Procurando o que falta com LEFT JOIN</h2>
+      <div class="slide-content">
+<pre><code><span class="cm">-- Personagens que NÃO têm nenhum item no inventário</span>
+<span class="kw">SELECT</span>
+  p.nome <span class="kw">AS</span> personagem,
+  p.nivel
+<span class="kw">FROM</span> personagens p
+<span class="kw">LEFT JOIN</span> inventario inv <span class="kw">ON</span> p.id = inv.personagem_id
+<span class="kw">WHERE</span> inv.personagem_id <span class="kw">IS NULL</span>;
+
+<span class="cm">-- Classes que ninguém escolheu (sem personagens)</span>
+<span class="kw">SELECT</span>
+  c.nome <span class="kw">AS</span> classe
+<span class="kw">FROM</span> classes c
+<span class="kw">LEFT JOIN</span> personagens p <span class="kw">ON</span> c.id = p.classe_id
+<span class="kw">WHERE</span> p.id <span class="kw">IS NULL</span>;</code></pre>
+        <div class="callout callout-success">
+          <span class="callout-strong">Truque comum</span>
+          LEFT JOIN + WHERE IS NULL = "me mostre o que NÃO tem correspondência no outro lado".
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Boas práticas</div>
+      <h2 class="slide-title">Antes de seguir em frente</h2>
+      <div class="slide-content">
+        <ol class="numbered">
+          <li><strong>Sempre use alias</strong><span>Queries com JOIN sem alias viram um inferno de manter.</span></li>
+          <li><strong>INNER por padrão</strong><span>Use LEFT só quando precisar manter um lado vazio. INNER é mais rápido.</span></li>
+          <li><strong>ON é a condição do JOIN, WHERE é filtro</strong><span>Não misture. ON liga as tabelas, WHERE filtra o resultado.</span></li>
+          <li><strong>Cuidado com produto cartesiano</strong><span>Esqueceu o ON? Linha de A x linha de B. Em tabelas grandes, isso explode.</span></li>
+          <li><strong>Pense no índice</strong><span>JOINs em colunas sem índice ficam lentos. PK e FK geralmente têm índice automático, mas verifique.</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">Entrega do dia</div>
+      <div class="badge-section"><span class="badge badge-individual">Projeto Individual</span></div>
+      <h2 class="slide-title">Biblioteca: relatórios com JOIN</h2>
+      <p class="slide-subtitle">Combine livros, autores, usuários e empréstimos.</p>
+      <div class="slide-content">
+        <ul class="bullet-list">
+          <li>Liste todos os livros com nome do autor</li>
+          <li>Liste empréstimos com nome do usuário e título do livro</li>
+          <li>Liste autores que nunca tiveram livros emprestados (LEFT JOIN)</li>
+          <li>Top 3 usuários que mais emprestaram (JOIN + GROUP BY)</li>
+          <li>Livros que estão emprestados agora (não devolvidos)</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-label">A seguir</div>
+      <div class="badge-section"><span class="badge badge-next">Aula 4.5</span></div>
+      <h2 class="slide-title">Subqueries e MERGE</h2>
+      <p class="slide-subtitle">Quando JOIN não é a ferramenta ideal.</p>
+      <div class="slide-content">
+        <ul class="bullet-list">
+          <li>Subqueries no WHERE, SELECT e FROM</li>
+          <li>IN, EXISTS, subqueries correlacionadas</li>
+          <li>MERGE: o upsert do SQL Server</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="slide cover">
+      <div class="cover-tag">Aula 4 / Fim</div>
+      <h1>Dúvidas?</h1>
+      <p class="lead">Tabelas conversam. Próxima parada: queries dentro de queries.</p>
+    </section>
+
+  </div>
+  <div class="footer">
+    <div class="footer-brand">Modelagem SQL Server <span class="accent">/</span> Aula 4</div>
+    <div id="counter">1 / 16</div>
+  </div>
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    let i = 0;
+    const counter = document.getElementById('counter');
+    const progress = document.getElementById('progress');
+    function show(n) {
+      slides.forEach(s => s.classList.remove('active'));
+      slides[n].classList.add('active');
+      counter.textContent = `${n + 1} / ${slides.length}`;
+      progress.style.width = `${((n + 1) / slides.length) * 100}%`;
+    }
+    document.addEventListener('keydown', (e) => {
+      if (['ArrowRight', 'PageDown'].includes(e.key) || e.key === ' ') {
+        e.preventDefault();
+        i = Math.min(i + 1, slides.length - 1);
+        show(i);
+      } else if (['ArrowLeft', 'PageUp'].includes(e.key)) {
+        e.preventDefault();
+        i = Math.max(i - 1, 0);
+        show(i);
+      } else if (e.key === 'Home') { i = 0; show(i); }
+      else if (e.key === 'End') { i = slides.length - 1; show(i); }
+      else if (e.key === 'f' || e.key === 'F') {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('a, button, input, pre, code')) return;
+      i = Math.min(i + 1, slides.length - 1);
+      show(i);
+    });
+    show(0);
+  </script>
+</body>
+</html>
